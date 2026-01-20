@@ -1,46 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Header from '../components/Header';
 import OrderPopup from '../components/OrderPopup';
 import CreateOrderButton from '../components/CreateOrderButton';
 import EmptyState from '../components/EmptyState';
 import OrderCard from '../components/OrderCard';
 import { MENU_ITEMS } from '../data/menuItems';
+import { getOrders } from '../API/orders.js';
 
 function OrdersPage() {
   const [orders, setOrders] = useState([]);
-  const [nextOrderId, setNextOrderId] = useState(1);
   const [selectedOrderId, setSelectedOrderId] = useState(null);
-  const [showItemSelector, setShowItemSelector] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showOrderPopup, setShowOrderPopup] = useState(false);
   const [currentOrder, setCurrentOrder] = useState(null);
-  const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ show: false, type: null, orderId: null });
+
+  useEffect(() => {
+    // get orders from server
+    (async () => {
+      const fetchedOrders = await getOrders();
+      setOrders(fetchedOrders);
+    })();
+  }, []);
 
   // Create a new order (open popup)
   const createOrder = () => {
-    const newOrder = {
-      id: nextOrderId,
-      items: [],
-      createdAt: new Date().toLocaleTimeString(),
-      status: 'draft',
-      paymentDone: false
-    };
-    setCurrentOrder(newOrder);
     setShowOrderPopup(true);
   };
 
   // Confirm order (save to orders list)
   const confirmOrder = () => {
-    // if (currentOrder && currentOrder.items.length > 0) {
-    //   setOrders([...orders, { ...currentOrder, status: 'confirmed', paymentDone: false }]);
-    //   setNextOrderId(nextOrderId + 1);
-    //   setShowOrderPopup(false);
-    //   setCurrentOrder(null);
-    //   setSearchQuery('');
-    // }
+    setOrders([]);
+    (async () => {
+      let orders = await getOrders();
+      setOrders(orders);
+    })()
     setShowOrderPopup(false);
-    setCurrentOrder(null);
   };
 
   // Cancel order creation
@@ -48,67 +43,6 @@ function OrdersPage() {
     setShowOrderPopup(false);
     setCurrentOrder(null);
     setSearchQuery('');
-  };
-
-  // Add item to order (works for both popup and existing orders)
-  const addItemToOrder = (menuItem, isPopup = false) => {
-    if (isPopup && currentOrder) {
-      const existingItem = currentOrder.items.find(item => item.name === menuItem.name);
-      
-      if (existingItem) {
-        setCurrentOrder({
-          ...currentOrder,
-          items: currentOrder.items.map(item =>
-            item.name === menuItem.name
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          )
-        });
-      } else {
-        setCurrentOrder({
-          ...currentOrder,
-          items: [...currentOrder.items, {
-            id: Date.now(),
-            name: menuItem.name,
-            price: menuItem.price,
-            quantity: 1,
-            status: 'pending'
-          }]
-        });
-      }
-      setSearchQuery('');
-    } else {
-      // For existing orders
-      setOrders(orders.map(order => {
-        if (order.id === selectedOrderId) {
-          const existingItem = order.items.find(item => item.name === menuItem.name);
-          
-          if (existingItem) {
-            return {
-              ...order,
-              items: order.items.map(item =>
-                item.name === menuItem.name
-                  ? { ...item, quantity: item.quantity + 1 }
-                  : item
-              )
-            };
-          } else {
-            return {
-              ...order,
-              items: [...order.items, {
-                id: Date.now(),
-                name: menuItem.name,
-                price: menuItem.price,
-                quantity: 1,
-                status: 'pending'
-              }]
-            };
-          }
-        }
-        return order;
-      }));
-      setSearchQuery('');
-    }
   };
 
   // Update item quantity
@@ -200,9 +134,6 @@ function OrdersPage() {
         ? { ...order, status: 'closed', closedAt: new Date().toLocaleTimeString() }
         : order
     ));
-    if (expandedOrderId === orderId) {
-      setExpandedOrderId(null);
-    }
     setConfirmDialog({ show: false, type: null, orderId: null });
   };
 
@@ -219,18 +150,6 @@ function OrdersPage() {
   const getOrderTotal = (order) => {
     return order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
   };
-
-  // Get filtered menu items
-  // const getFilteredMenuItems = () => {
-  //   return MENU_ITEMS.filter(item => 
-  //     item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-  //     item.category.toLowerCase().includes(searchQuery.toLowerCase())
-  //   ).reduce((acc, item) => {
-  //     if (!acc[item.category]) acc[item.category] = [];
-  //     acc[item.category].push(item);
-  //     return acc;
-  //   }, {});
-  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -272,15 +191,11 @@ function OrdersPage() {
       )}
 
       {/* Order Creation Popup */}
-      {showOrderPopup && currentOrder && (
+      {showOrderPopup && (
         <OrderPopup
           // order={currentOrder}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          // filteredMenuItems={getFilteredMenuItems()}
-          // onSelectMenuItem={(item) => addItemToOrder(item, true)}
-          // onUpdateQuantity={(itemId, newQuantity) => updateItemQuantity(itemId, newQuantity, true)}
-          // onRemoveItem={(itemId) => cancelItem(itemId, true)}
           onConfirm={confirmOrder}
           onCancel={cancelOrderCreation}
           getOrderTotal={getOrderTotal}
@@ -302,17 +217,6 @@ function OrdersPage() {
               <OrderCard
                 key={order.id}
                 order={order}
-                showItemSelector={showItemSelector}
-                searchQuery={searchQuery}
-                menuItems={MENU_ITEMS}
-                isExpanded={expandedOrderId === order.id}
-                onToggleExpand={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                onToggleItemSelector={(orderId) => {
-                  setShowItemSelector(orderId);
-                  if (!orderId) setSearchQuery('');
-                }}
-                onSearchChange={setSearchQuery}
-                onAddItem={(item) => addItemToOrder(item, false)}
                 onUpdateQuantity={(itemId, newQuantity) => updateItemQuantity(itemId, newQuantity, false)}
                 onRemoveItem={(itemId) => cancelItem(itemId, false)}
                 onToggleServed={toggleItemServed}

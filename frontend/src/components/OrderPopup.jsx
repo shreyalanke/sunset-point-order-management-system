@@ -1,17 +1,14 @@
 import { X } from 'lucide-react';
 import MenuSearch from './MenuSearch';
 import MenuItemsList from './MenuItemsList';
-import OrderItemsList from './OrderItemsList';
+import OrderItemsListPopup from './OrderItemsListPopup';
 import { useEffect, useState } from 'react';
 import { getDishes } from '../API/dishes.js';
+import { createOrder } from '../API/orders.js';
 
 function OrderPopup({
   searchQuery,
   onSearchChange,
-  // filteredMenuItems,
-  // onSelectMenuItem,
-  // onUpdateQuantity,
-  // onRemoveItem,
   onConfirm,
   onCancel,
   getOrderTotal
@@ -25,7 +22,6 @@ function OrderPopup({
     (async () => {
       try {
         let dishes = await getDishes();
-        console.log("Fetched dishes:", dishes);
         setFilteredMenuItems(dishes);
       } catch (error) {
         console.error("Error fetching dishes:", error);
@@ -65,6 +61,18 @@ function OrderPopup({
   }
 
 
+  function onOrderConfirm(){
+    (async ()=>{
+      try {
+        await createOrder(order);
+        onConfirm();
+      } catch (error) {
+        console.error("Error saving order:", error);
+      }
+    })();
+  }
+
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-[1100px] h-[650px] flex flex-col overflow-hidden">
@@ -90,11 +98,10 @@ function OrderPopup({
               <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wide">Order Items</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              <OrderItemsList
+              <OrderItemsListPopup
                 items={order.items}
                 onUpdateQuantity={onUpdateQuantity}
                 onRemove={onRemoveItem}
-                variant="popup"
               />
             </div>
           </div>
@@ -128,7 +135,7 @@ function OrderPopup({
               Cancel
             </button>
             <button
-              onClick={onConfirm}
+              onClick={onOrderConfirm}
               disabled={order.items.length === 0}
               className="flex-1 px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-bold shadow-lg disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
             >

@@ -1,12 +1,10 @@
 import { Package } from 'lucide-react';
-import OrderItem from './OrderItem';
+import OrderItemPopup from './OrderItemPopup';
 
-function OrderItemsList({ 
+function OrderItemsListPopup({ 
   items,  
   onRemove, 
-  onToggleServed = null,
-  showCheckbox = false,
-  variant = 'default' // 'default' or 'popup'
+  onUpdateQuantity
 }) {
   if (items.length === 0) {
     return (
@@ -19,18 +17,17 @@ function OrderItemsList({
   }
 
   return (
-    <div className={`space-y-2 ${variant === 'popup' ? 'border border-gray-200 rounded-lg p-3 bg-white' : ''}`}>
+    <div className="space-y-2">
       {items.map(item => (
-        <OrderItem
+        <OrderItemPopup
           key={item.id}
           item={item}
           onRemove={onRemove}
-          onToggleServed={onToggleServed}
-          showCheckbox={showCheckbox}
+          onUpdateQuantity={onUpdateQuantity}
         />
       ))}
     </div>
   );
 }
 
-export default OrderItemsList;
+export default OrderItemsListPopup;

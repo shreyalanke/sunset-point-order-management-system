@@ -2,11 +2,11 @@ import { X } from 'lucide-react';
 
 function OrderItem({ 
   item, 
-  onUpdateQuantity, 
   onRemove, 
   onToggleServed = null,
   showCheckbox = false 
 }) {
+  console.log('Rendering OrderItem:', item);
   return (
     <div
       className={`flex items-center gap-2 p-2.5 rounded-lg border transition-all ${
@@ -34,23 +34,11 @@ function OrderItem({
         </p>
       </div>
       <div className="flex items-center gap-1.5 flex-shrink-0">
-        <div className="flex items-center border border-gray-300 rounded-md overflow-hidden bg-white">
-          <button
-            onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-            className="px-2 py-1 text-gray-600 hover:bg-gray-100 transition-colors text-sm font-bold"
-            disabled={item.quantity <= 1}
-          >
-            −
-          </button>
-          <span className="px-2 py-1 text-xs font-bold bg-white min-w-[2rem] text-center border-x border-gray-300">
-            {item.quantity}
+        <div className="flex items-center border border-gray-300 rounded-md bg-white px-2 py-1">
+          <span className="text-xs text-gray-500 mr-1">Qty</span>
+          <span className="text-sm font-bold text-gray-900">
+            {Number(item.quantity)}
           </span>
-          <button
-            onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-            className="px-2 py-1 text-gray-600 hover:bg-gray-100 transition-colors text-sm font-bold"
-          >
-            +
-          </button>
         </div>
         <button
           onClick={() => onRemove(item.id)}

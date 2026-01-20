@@ -1,16 +1,9 @@
 import { Trash2, Package, ChevronDown, ChevronRight, CheckCircle } from 'lucide-react';
 import OrderItemsList from './OrderItemsList';
+import { useState } from 'react';
 
 function OrderCard({ 
   order,
-  showItemSelector,
-  searchQuery,
-  menuItems,
-  isExpanded,
-  onToggleExpand,
-  onToggleItemSelector,
-  onSearchChange,
-  onAddItem,
   onUpdateQuantity,
   onRemoveItem,
   onToggleServed,
@@ -19,16 +12,7 @@ function OrderCard({
   onTogglePayment,
   getOrderTotal
 }) {
-  const filteredAndGroupedMenuItems = menuItems
-    .filter(item => 
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .reduce((acc, item) => {
-      if (!acc[item.category]) acc[item.category] = [];
-      acc[item.category].push(item);
-      return acc;
-    }, {});
+  let [isExpanded,setIsExpanded]=useState(false);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all hover:border-blue-300">
@@ -38,7 +22,9 @@ function OrderCard({
         <div className="flex-1 min-w-0">
           {/* Collapsed View */}
           {!isExpanded ? (
-            <div className="px-5 py-4 flex items-center gap-4 cursor-pointer" onClick={onToggleExpand}>
+            <div className="px-5 py-4 flex items-center gap-4 cursor-pointer" onClick={()=>{
+              setIsExpanded(!isExpanded);
+            }}>
               <ChevronRight size={20} className="text-gray-400 flex-shrink-0" />
               <div className="flex-1">
                 <h3 className="font-bold text-gray-900 text-lg">Order #{order.id}</h3>
@@ -50,7 +36,9 @@ function OrderCard({
           ) : (
             /* Expanded View */
             <div className="p-5">
-              <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={onToggleExpand}>
+              <div className="flex items-center gap-2 mb-4 cursor-pointer" onClick={()=>{
+                setIsExpanded(!isExpanded);
+              }}>
                 <ChevronDown size={20} className="text-gray-400" />
                 <h3 className="font-bold text-gray-900 text-lg">Order #{order.id}</h3>
                 <span className="text-xs text-gray-500">• {order.createdAt}</span>
@@ -66,7 +54,6 @@ function OrderCard({
                 <div className="space-y-2">
                   <OrderItemsList
                     items={order.items}
-                    onUpdateQuantity={(itemId, newQuantity) => onUpdateQuantity(itemId, newQuantity)}
                     onRemove={onRemoveItem}
                     onToggleServed={(itemId) => onToggleServed(order.id, itemId)}
                     showCheckbox={true}
