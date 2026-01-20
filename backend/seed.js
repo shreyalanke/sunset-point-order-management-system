@@ -1,4 +1,4 @@
-import pool from "./db.js";   
+import pool from "./src/db.js";
 
 let dishes =  [
     {dish_name: "Spaghetti Bolognese", category: "Main Course", price: 12},
