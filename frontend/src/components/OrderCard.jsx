@@ -27,7 +27,7 @@ function OrderCard({
             }}>
               <ChevronRight size={20} className="text-gray-400 shrink-0" />
               <div className="flex-1">
-                <h3 className="font-bold text-gray-900 text-lg">Order #{order.id}</h3>
+                <h3 className="font-bold text-gray-900 text-lg">Order {order.tag}</h3>
                 <p className="text-xs text-gray-500 mt-0.5">
                   {order.items.length} {order.items.length === 1 ? 'item' : 'items'} • {order.createdAt}
                 </p>
@@ -40,7 +40,7 @@ function OrderCard({
                 setIsExpanded(!isExpanded);
               }}>
                 <ChevronDown size={20} className="text-gray-400" />
-                <h3 className="font-bold text-gray-900 text-lg">Order #{order.id}</h3>
+                <h3 className="font-bold text-gray-900 text-lg">Order {order.tag}</h3>
                 <span className="text-xs text-gray-500">• {order.createdAt}</span>
               </div>
               {order.items.length === 0 ? (

@@ -15,7 +15,8 @@ function OrderPopup({
 }) {
 
   let [filteredMenuItems, setFilteredMenuItems] = useState([]);
-  let [order, setOrder] = useState({items: []});
+  let [order, setOrder] = useState({items: [], tag: ''});
+  let [tagError, setTagError] = useState('');
 
   // Fetch and filter menu items based on search query
   useEffect(() => {
@@ -62,6 +63,13 @@ function OrderPopup({
 
 
   function onOrderConfirm(){
+    // Validate tag is not empty
+    if (!order.tag || order.tag.trim() === '') {
+      setTagError('Tag is required');
+      return;
+    }
+    
+    setTagError('');
     (async ()=>{
       try {
         await createOrder(order);
@@ -72,16 +80,19 @@ function OrderPopup({
     })();
   }
 
-
+  function handleTagChange(e) {
+    const value = e.target.value;
+    setOrder({ ...order, tag: value });
+    // Clear error when user starts typing
+    if (value.trim() !== '') {
+      setTagError('');
+    }
+  }
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-275 h-162.5 flex flex-col overflow-hidden">
         {/* Popup Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-linear-to-r from-blue-600 to-indigo-600">
-          {/* <div>
-            <h2 className="text-xl font-bold text-white">New Order #{order.id}</h2>
-            <p className="text-xs text-blue-100 mt-0.5">{order.createdAt}</p>
-          </div> */}
           <button
             onClick={onCancel}
             className="p-1.5 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all"
@@ -89,7 +100,24 @@ function OrderPopup({
             <X size={20} />
           </button>
         </div>
-
+        <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+          <label htmlFor="order-tag" className="block text-sm font-bold text-gray-700 mb-2">
+            Order Tag <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="order-tag"
+            type="text"
+            value={order.tag}
+            onChange={handleTagChange}
+            placeholder="Enter order tag (e.g., Table 5, Room 101)"
+            className={`w-full px-4 py-2.5 border-2 ${
+              tagError ? 'border-red-500' : 'border-gray-300'
+            } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
+          />
+          {tagError && (
+            <p className="mt-1.5 text-sm text-red-600 font-medium">{tagError}</p>
+          )}
+        </div>
         {/* Popup Content - Two Column Layout */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Side - Order Items */}
