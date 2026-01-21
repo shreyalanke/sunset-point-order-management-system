@@ -73,19 +73,19 @@ function postOrder(req, res) {
         return res.status(400).send({ error: "Invalid items in request body" });
     }
     let query = `INSERT INTO orders (is_payment_done, order_status, order_tag) VALUES ($1, $2, $3) RETURNING order_id`;
-        pool.query(query, [false, 'OPEN', tag]).then(async result => {
-            let orderId = result.rows[0].order_id;
-            console.log("Created order with ID:", orderId);
-            let queryItems = `INSERT INTO order_items (order_id, dish_id, quantity) VALUES ($1, $2, $3)`;
-            for (let item of items) {
-                let { id: dishId, quantity } = item;
-                await pool.query(queryItems, [orderId, dishId, quantity]);
-            }
-            res.status(201).send({ orderId });
-        }).catch(err => {
-            console.error("Error creating order:", err);
-            res.status(500).send({ error: "Failed to create order" });
-        });
+    pool.query(query, [false, 'OPEN', tag]).then(async result => {
+        let orderId = result.rows[0].order_id;
+        console.log("Created order with ID:", orderId);
+        let queryItems = `INSERT INTO order_items (order_id, dish_id, quantity) VALUES ($1, $2, $3)`;
+        for (let item of items) {
+            let { id: dishId, quantity } = item;
+            await pool.query(queryItems, [orderId, dishId, quantity]);
+        }
+        res.status(201).send({ orderId });
+    }).catch(err => {
+        console.error("Error creating order:", err);
+        res.status(500).send({ error: "Failed to create order" });
+    });
 }
 
 export { getOrders, postOrder };

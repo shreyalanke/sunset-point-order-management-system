@@ -19,6 +19,8 @@ CREATE TABLE order_items (
     order_id INTEGER NOT NULL,
     dish_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL CHECK (quantity > 0),
+    dish_name_snapshot VARCHAR(100) NOT NULL,
+    price_snapshot INTEGER NOT NULL CHECK (price_snapshot > 0),
     item_status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (
     item_status IN ('PENDING', 'SERVED', 'CANCELLED')
     ),
