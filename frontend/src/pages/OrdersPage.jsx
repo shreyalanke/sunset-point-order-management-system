@@ -178,7 +178,7 @@ function OrdersPage() {
           
         {/* --- Sidebar (Detailed List) --- */}
         <aside className={`
-          w-full lg:w-[350px] bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col shrink-0
+          w-full lg:w-87.5 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col shrink-0
           ${isSidebarOpen ? 'fixed inset-0 z-40 m-4 lg:m-0 lg:static' : 'hidden lg:flex'}
         `}>
           {/* Mobile Close Button */}
