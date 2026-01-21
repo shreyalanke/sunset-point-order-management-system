@@ -78,7 +78,7 @@ async function orderServed(req,res){
     if(!result){
       return  res.status(404).json({ error: "Order item not found" });
     }else{
-      return res.status(200).json({ message: "Item served status toggled successfully", item: result.item_status });
+      return res.status(200).json({ message: "Item served status toggled successfully", status: result.item_status });
     }
   } catch (error) {
     console.log("Error toggling item served status:", error);

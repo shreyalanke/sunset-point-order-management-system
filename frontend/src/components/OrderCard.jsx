@@ -6,13 +6,14 @@ import {
   ReceiptIndianRupeeIcon as Receipt,
   Printer,
   AlertCircle,
+  Loader2, // Imported Loader
 } from "lucide-react";
 import OrderItemsList from "./OrderItemsList";
 import dayjs from "dayjs";
+import { useState } from "react"; // Ensure useState is imported
 
 function OrderCard({
   order,
-  onUpdateQuantity,
   onRemoveItem,
   onToggleServed,
   onCancelOrder,
@@ -22,12 +23,53 @@ function OrderCard({
 }) {
   if (!order) return null;
 
+  // Local loading states
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+
   const itemCount = order.items.reduce((acc, item) => acc + item.quantity, 0);
   const isClosed = order.status === "CLOSED";
   const totalAmount = getOrderTotal(order);
 
+  // Helper to check if any action is currently in progress
+  const isBusy = isCompleting || isCancelling || isPaymentLoading;
+
+  // --- Handlers ---
+
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    // Passing a callback to the parent to reset loading state after operation
+    onCancelOrder(() => {
+      setIsCancelling(false);
+    });
+  };
+
+  const handleCloseOrder = async () => {
+    setIsCompleting(true);
+    onCloseOrder(() => {
+      setIsCompleting(false);
+    });
+  };
+
+  const handlePaymentToggle = async () => {
+    if (isClosed) return;
+    setIsPaymentLoading(true);
+    try {
+      await onTogglePayment(order.id);
+    } catch (error) {
+      console.error("Error toggling payment", error);
+    } finally {
+      setIsPaymentLoading(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative">
+      
+      {/* Loading Overlay (Optional: covers the card if you want to block all interaction strictly) */}
+      {/* {isBusy && <div className="absolute inset-0 bg-white/50 z-50 cursor-wait" />} */}
+
       {/* --- Header Section --- */}
       <div className="px-8 py-6 border-b border-gray-100 bg-white flex items-start justify-between shrink-0">
         <div>
@@ -61,6 +103,7 @@ function OrderCard({
         <button
           className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
           title="Print Receipt"
+          disabled={isBusy}
         >
           <Printer size={20} />
         </button>
@@ -86,14 +129,14 @@ function OrderCard({
               <div className="p-2 px-4">
                 <OrderItemsList
                   items={order.items}
-                  onRemove={isClosed ? null : onRemoveItem}
+                  onRemove={isClosed || isBusy ? null : onRemoveItem}
                   onToggleServed={
-                    isClosed
+                    isClosed || isBusy
                       ? null
                       : (itemId) => onToggleServed(order.id, itemId)
                   }
                   showCheckbox={true}
-                  readOnly={isClosed}
+                  readOnly={isClosed || isBusy}
                 />
               </div>
             </div>
@@ -131,10 +174,14 @@ function OrderCard({
 
         {/* Action Bar */}
         <div className="p-6 bg-gray-50 flex flex-col lg:flex-row gap-4 items-center justify-between">
+          
           {/* Left: Payment Toggle */}
-          <label
+          <button
+            onClick={handlePaymentToggle}
+            disabled={isClosed || isBusy}
             className={`
-            flex items-center gap-3 cursor-pointer px-5 py-3 rounded-xl border transition-all w-full lg:w-auto shadow-sm group
+            flex items-center gap-3 cursor-pointer px-5 py-3 rounded-xl border transition-all w-full lg:w-auto shadow-sm group relative overflow-hidden
+            disabled:opacity-70 disabled:cursor-not-allowed
             ${
               order.paymentDone
                 ? "bg-green-500 border-green-600 text-white"
@@ -142,56 +189,71 @@ function OrderCard({
             }
           `}
           >
-            <input
-              type="checkbox"
-              checked={order.paymentDone || false}
-              onChange={() => onTogglePayment(order.id)}
-              disabled={isClosed}
-              className="sr-only"
-            />
-            <div
+             <div
               className={`
               w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
               ${order.paymentDone ? "bg-white/20 border-white text-white" : "bg-transparent border-gray-400 text-transparent"}
             `}
             >
-              <CheckCircle
-                size={14}
-                fill={order.paymentDone ? "currentColor" : "none"}
-              />
+              {isPaymentLoading ? (
+                 <Loader2 size={14} className="animate-spin text-current" />
+              ) : (
+                <CheckCircle
+                  size={14}
+                  fill={order.paymentDone ? "currentColor" : "none"}
+                />
+              )}
             </div>
             <span className="font-bold whitespace-nowrap select-none">
               {order.paymentDone ? "Payment Received" : "Mark as Paid"}
             </span>
-          </label>
+          </button>
 
           {/* Right: Primary Actions */}
           <div className="flex items-center gap-3 w-full lg:w-auto">
             {!isClosed && (
               <button
-                onClick={() => onCancelOrder(order.id)}
-                className="px-5 py-3 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-xl font-bold transition-all flex items-center justify-center gap-2 flex-1 lg:flex-none cursor-pointer"
+                onClick={handleCancel}
+                disabled={isBusy}
+                className="px-5 py-3 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-xl font-bold transition-all flex items-center justify-center gap-2 flex-1 lg:flex-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Cancel Order"
               >
-                <Trash2 size={18} />
-                <span className="lg:hidden xl:inline">Cancel</span>
+                {isCancelling ? (
+                   <Loader2 size={18} className="animate-spin" />
+                ) : (
+                   <Trash2 size={18} />
+                )}
+                <span className="lg:hidden xl:inline">
+                    {isCancelling ? "Cancelling..." : "Cancel"}
+                </span>
               </button>
             )}
 
             <button
-              onClick={() => onCloseOrder(order.id)}
-              disabled={isClosed}
+              onClick={handleCloseOrder}
+              disabled={isClosed || isBusy}
               className={`
-                px-8 py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 flex-1 lg:flex-none transition-all transform active:scale-95
+                px-8 py-3 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 flex-1 lg:flex-none transition-all transform
                 ${
-                  isClosed
-                    ? "bg-gray-400 cursor-not-allowed shadow-none"
-                    : "bg-gray-900 hover:bg-black hover:shadow-xl hover:-translate-y-0.5 cursor-pointer"
+                  isClosed || isBusy
+                    ? "bg-gray-400 cursor-not-allowed shadow-none opacity-80"
+                    : "bg-gray-900 hover:bg-black hover:shadow-xl hover:-translate-y-0.5 cursor-pointer active:scale-95"
                 }
               `}
             >
-              <CheckCircle size={20} />
-              <span>{isClosed ? "Order Completed" : "Complete Order"}</span>
+              {isCompleting ? (
+                <Loader2 size={20} className="animate-spin" />
+              ) : (
+                <CheckCircle size={20} />
+              )}
+              
+              <span>
+                {isCompleting 
+                    ? "Processing..." 
+                    : isClosed 
+                        ? "Order Completed" 
+                        : "Complete Order"}
+              </span>
             </button>
           </div>
         </div>

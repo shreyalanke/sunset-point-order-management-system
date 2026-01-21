@@ -29,7 +29,7 @@ async function getOrders() {
       ON o.order_id = oi.order_id
     LEFT JOIN dishes d
       ON oi.dish_id = d.dish_id
-    ORDER BY o.created_at;
+    ORDER BY o.created_at, oi.order_item_id;
   `;
 
     const result = await pool.query(query);

@@ -9,15 +9,19 @@ function OrderPopup({
   searchQuery,
   onSearchChange,
   onConfirm,
-  onCancel,
-  getOrderTotal
+  onCancel
 }) {
+
+  let getOrderTotal = function(order) {
+    return order.items
+      .reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }
 
   let [filteredMenuItems, setFilteredMenuItems] = useState([]);
   let [order, setOrder] = useState({items: [], tag: ''});
   let [tagError, setTagError] = useState('');
   let [isLoading, setIsLoading] = useState(true);
-  let [isSubmitting, setIsSubmitting] = useState(false); // New state for button loading
+  let [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch and filter menu items based on search query
   useEffect(() => {

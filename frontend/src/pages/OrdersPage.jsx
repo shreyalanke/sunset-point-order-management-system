@@ -30,6 +30,7 @@ function OrdersPage() {
     show: false,
     type: null,
     orderId: null,
+    callBack: null,
   });
 
   // --- Data Fetching ---
@@ -44,9 +45,7 @@ function OrdersPage() {
 
   // --- Computed Stats & Helpers ---
   const getOrderTotal = (order) => {
-    return order.items
-      .reduce((sum, item) => sum + item.price * item.quantity, 0)
-      .toFixed(2);
+    return order.orderTotal;
   };
 
   const stats = useMemo(() => {
@@ -115,7 +114,7 @@ function OrdersPage() {
   const handleToggleServed = (orderId, itemId) => {
     (async () => {
       try {
-        await toggleServedStatus(orderId,itemId);
+        let result = await toggleServedStatus(orderId,itemId);
         setOrders((prev) =>
           prev.map((order) => {
             if (order.id !== orderId) return order;
@@ -125,7 +124,7 @@ function OrdersPage() {
                 item.id === itemId
                   ? {
                       ...item,
-                      status: item.status === "SERVED" ? "PENDING" : "SERVED",
+                      status: result.status,
                     }
                   : item,
               ),
@@ -150,22 +149,26 @@ function OrdersPage() {
     );
   };
 
-  const openConfirmDialog = (type, orderId) =>
-    setConfirmDialog({ show: true, type, orderId });
+  const openConfirmDialog = (type, orderId, callBack) =>
+    setConfirmDialog({ show: true, type, orderId, callBack });
 
   const executeDialogAction = () => {
     const { type, orderId } = confirmDialog;
     if (type === "cancel") {
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      if (confirmDialog.callBack) confirmDialog.callBack();
       if (selectedOrderId === orderId) setSelectedOrderId(null);
+      setConfirmDialog({ show: false, type: null, orderId: null, callBack: null });
     } else if (type === "close") {
       (async () => {
         try {
           await closeOrder(orderId);
           fetchOrders();
-          setConfirmDialog({ show: false, type: null, orderId: null });
+          setConfirmDialog({ show: false, type: null, orderId: null, callBack: null });
         } catch (err) {
           console.error("Error closing order:", err);
+        }finally {
+          if (confirmDialog.callBack) confirmDialog.callBack();
         }
       })();
     }
@@ -409,13 +412,12 @@ function OrdersPage() {
             <div className="h-full overflow-y-auto pb-20 custom-scrollbar pr-1">
               <OrderCard
                 order={orders.find((o) => o.id === selectedOrderId)}
-                onUpdateQuantity={handleUpdateQuantity}
                 onRemoveItem={handleRemoveItem}
                 onToggleServed={handleToggleServed}
-                onCancelOrder={() =>
-                  openConfirmDialog("cancel", selectedOrderId)
+                onCancelOrder={async (callBack) =>
+                  openConfirmDialog("cancel", selectedOrderId,callBack)
                 }
-                onCloseOrder={() => openConfirmDialog("close", selectedOrderId)}
+                onCloseOrder={(callBack) => openConfirmDialog("close", selectedOrderId, callBack)}
                 onTogglePayment={handleTogglePayment}
                 getOrderTotal={getOrderTotal}
               />
@@ -464,9 +466,10 @@ function OrdersPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() =>
-                    setConfirmDialog({ show: false, type: null, orderId: null })
-                  }
+                  onClick={() =>{
+                        confirmDialog.callBack && confirmDialog.callBack();
+                        setConfirmDialog({ show: false, type: null, orderId: null })
+                      }}
                   className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
                 >
                   Back
@@ -494,7 +497,6 @@ function OrdersPage() {
           onSearchChange={(e) => setSearchQuery(e.target.value)}
           onConfirm={handleConfirmOrderCreation}
           onCancel={() => setShowOrderPopup(false)}
-          getOrderTotal={getOrderTotal}
         />
       )}
     </div>

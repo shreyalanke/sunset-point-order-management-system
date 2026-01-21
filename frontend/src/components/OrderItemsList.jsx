@@ -8,7 +8,6 @@ function OrderItemsList({
   showCheckbox = false,
   readOnly = false
 }) {
-  
   if (!items || items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
