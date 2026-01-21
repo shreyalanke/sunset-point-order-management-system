@@ -39,13 +39,6 @@ function Header() {
             <h1 className="text-lg font-black text-gray-900 leading-none tracking-tight">
               Sunset Point
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
-                POS Terminal
-              </span>
-              <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-              <p className="text-xs text-gray-400 font-medium">Station #04</p>
-            </div>
           </div>
         </div>
 

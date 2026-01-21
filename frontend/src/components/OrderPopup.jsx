@@ -202,7 +202,7 @@ function OrderPopup({
               <div className="flex justify-between items-end">
                 <span className="text-gray-900 font-bold text-lg">Total</span>
                 <span className="text-3xl font-black text-blue-600 tracking-tight">
-                  ${getOrderTotal(order)}
+                  ₹{getOrderTotal(order)}
                 </span>
               </div>
             </div>

@@ -8,9 +8,9 @@ import {
   Search, 
   Clock, 
   CheckCircle2, 
-  DollarSign, 
+  IndianRupeeIcon, 
   Menu,
-  Receipt,
+  ReceiptIndianRupeeIcon,
   CreditCard,
   ChevronRight,
   AlertCircle,
@@ -157,8 +157,8 @@ function OrdersPage() {
             />
             <StatCard 
               label="Total Revenue" 
-              value={`$${stats.revenue.toFixed(2)}`} 
-              icon={DollarSign} 
+              value={`₹${stats.revenue.toFixed(2)}`} 
+              icon={IndianRupeeIcon} 
               color="text-indigo-600" 
               bg="bg-indigo-50" 
             />
@@ -193,7 +193,7 @@ function OrdersPage() {
           {/* Search Header */}
           <div className="px-5 py-4 border-b border-gray-100 bg-white z-10">
             <h2 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <Receipt size={18} className="text-blue-600"/>
+              <ReceiptIndianRupeeIcon size={18} className="text-blue-600"/>
               Orders List
             </h2>
             <div className="relative mb-3 group">
@@ -229,7 +229,7 @@ function OrdersPage() {
           <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2 bg-gray-50/30">
             {visibleOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-gray-400 text-sm">
-                <Receipt size={32} className="mb-2 opacity-20" />
+                <ReceiptIndianRupeeIcon size={32} className="mb-2 opacity-20" />
                 <p>No orders found</p>
               </div>
             ) : (
@@ -307,7 +307,7 @@ function OrdersPage() {
                         )}
                       </div>
                       <span className={`text-lg font-black ${isSelected ? 'text-white' : 'text-gray-900'}`}>
-                        ${total}
+                        ₹{total}
                       </span>
                     </div>
 
@@ -351,7 +351,7 @@ function OrdersPage() {
           ) : (
             <div className="h-full flex flex-col items-center justify-center bg-white/50 rounded-2xl border-2 border-dashed border-gray-200 text-center p-8">
               <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                <Receipt className="text-gray-400" size={40} />
+                <ReceiptIndianRupeeIcon className="text-gray-400" size={40} />
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-2">No Order Selected</h3>
               <p className="text-gray-500 max-w-sm">

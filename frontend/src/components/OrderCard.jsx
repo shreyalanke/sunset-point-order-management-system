@@ -3,9 +3,8 @@ import {
   CheckCircle, 
   Clock, 
   ShoppingBag,
-  Receipt,
+  ReceiptIndianRupeeIcon as Receipt,
   Printer,
-  CreditCard,
   AlertCircle
 } from 'lucide-react';
 import OrderItemsList from './OrderItemsList';
@@ -118,7 +117,7 @@ function OrderCard({
               </div>
             </div>
             <span className="text-4xl font-black text-gray-900 tracking-tighter">
-              ${totalAmount}
+              ₹{totalAmount}
             </span>
           </div>
         </div>
