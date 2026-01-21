@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import Header from "../components/Header";
 import OrderPopup from "../components/OrderPopup";
 import OrderCard from "../components/OrderCard";
-import { getOrders, closeOrder } from "../API/orders.js";
+import { getOrders, closeOrder, toggleServedStatus } from "../API/orders.js";
 import {
   Plus,
   Search,
@@ -113,22 +113,31 @@ function OrdersPage() {
   };
 
   const handleToggleServed = (orderId, itemId) => {
-    setOrders((prev) =>
-      prev.map((order) => {
-        if (order.id !== orderId) return order;
-        return {
-          ...order,
-          items: order.items.map((item) =>
-            item.id === itemId
-              ? {
-                  ...item,
-                  status: item.status === "served" ? "pending" : "served",
-                }
-              : item,
-          ),
-        };
-      }),
-    );
+    (async () => {
+      try {
+        await toggleServedStatus(orderId,itemId);
+        setOrders((prev) =>
+          prev.map((order) => {
+            if (order.id !== orderId) return order;
+            return {
+              ...order,
+              items: order.items.map((item) =>
+                item.id === itemId
+                  ? {
+                      ...item,
+                      status: item.status === "SERVED" ? "PENDING" : "SERVED",
+                    }
+                  : item,
+              ),
+            };
+          }),
+        );
+      } catch (error) {
+        console.log(error)
+      }
+    })()
+    
+
   };
 
   const handleTogglePayment = (orderId) => {
@@ -276,7 +285,7 @@ function OrdersPage() {
 
                 // Calculate Pending Items
                 const pendingItems = order.items.filter(
-                  (item) => item.status !== "served",
+                  (item) => item.status !== "SERVED",
                 ).length;
                 const isFullyServed = pendingItems === 0 && itemCount > 0;
 

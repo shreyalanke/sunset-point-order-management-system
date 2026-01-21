@@ -16,4 +16,9 @@ async function closeOrder(orderId) {
     return response.data;
 }
 
-export { getOrders, createOrder, closeOrder };
+async function toggleServedStatus(orderId, itemId) {
+    const response = await apiClient.put(`/orders/toggle-served`, { orderId, itemId });
+    return response.data;
+}
+
+export { getOrders, createOrder, closeOrder, toggleServedStatus };

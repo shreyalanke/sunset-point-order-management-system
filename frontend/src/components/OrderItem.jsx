@@ -7,7 +7,7 @@ function OrderItem({
   showCheckbox = false,
   readOnly = false
 }) {
-  const isServed = item.status === 'served';
+  const isServed = item.status === 'SERVED';
 
   return (
     <div className="group relative grid grid-cols-12 gap-4 py-4 border-b border-gray-50 last:border-0 hover:bg-blue-50/50 transition-colors items-center px-4 -mx-2 rounded-lg">

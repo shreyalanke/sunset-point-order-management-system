@@ -71,4 +71,19 @@ async function closeOrder(req,res) {
   }
 }
 
-export { getOrdersController as getOrders, postOrder, closeOrder };
+async function orderServed(req,res){
+  let { orderId, itemId} = req.body;
+  try {
+    let result = await databaseService.toggleItemServedStatus(orderId, itemId);
+    if(!result){
+      return  res.status(404).json({ error: "Order item not found" });
+    }else{
+      return res.status(200).json({ message: "Item served status toggled successfully", item: result.item_status });
+    }
+  } catch (error) {
+    console.log("Error toggling item served status:", error);
+    res.status(500).json({ error: "Failed to toggle item served status" });
+  }
+}
+
+export { getOrdersController as getOrders, postOrder, closeOrder, orderServed };

@@ -117,4 +117,19 @@ async function closeOrder(orderId) {
     return result.rows[0];
 }
 
-export default { getDishes, getOrders , createOrder};
+async function toggleItemServedStatus(orderId, itemId) {
+    const query = `
+    UPDATE order_items
+    SET item_status = CASE
+        WHEN item_status = 'SERVED' THEN 'PENDING'
+        ELSE 'SERVED'
+    END
+    WHERE order_id = $1 AND order_item_id = $2
+    RETURNING *;
+  `;
+
+    const result = await pool.query(query, [orderId, itemId]);
+    return result.rows[0];
+}
+
+export default { getDishes, getOrders , createOrder, closeOrder, toggleItemServedStatus };

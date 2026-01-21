@@ -1,5 +1,5 @@
 import express from "express"
-import { closeOrder, getOrders, postOrder } from "../controllers/order.controller.js"  
+import { closeOrder, getOrders, postOrder, orderServed } from "../controllers/order.controller.js"  
 
 let orderRoute = express.Router()
 
@@ -7,5 +7,6 @@ let orderRoute = express.Router()
 orderRoute.get("/", getOrders);
 orderRoute.post("/", postOrder);
 orderRoute.put("/close", closeOrder);
+orderRoute.put("/toggle-served", orderServed);
 
 export default orderRoute
