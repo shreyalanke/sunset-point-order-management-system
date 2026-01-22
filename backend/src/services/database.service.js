@@ -102,9 +102,42 @@ async function createOrder(tag, items) {
 }
 
 async function closeOrder(orderId) {
-  let query = `UPDATE orders SET order_status='CLOSED', is_payment_done=true WHERE order_id=$1 RETURNING *`;
-  let result = await pool.query(query, [orderId]);
-  return result.rows[0];
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // 1. Mark all non-cancelled items as SERVED
+    await client.query(
+      `
+      UPDATE order_items
+      SET item_status = 'SERVED'
+      WHERE order_id = $1
+        AND item_status != 'CANCELLED'
+      `,
+      [orderId],
+    );
+
+    // 2. Close the order and mark payment done
+    const result = await client.query(
+      `
+      UPDATE orders
+      SET order_status = 'CLOSED',
+          is_payment_done = true
+      WHERE order_id = $1
+      RETURNING *
+      `,
+      [orderId],
+    );
+
+    await client.query("COMMIT");
+    return result.rows[0];
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 async function toggleItemServedStatus(orderId, itemId) {
