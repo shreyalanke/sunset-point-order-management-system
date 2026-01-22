@@ -1,11 +1,11 @@
 import databaseService from "../services/database.service.js";
 
-
 function getOrdersController(req, res) {
-  databaseService.getOrders()
-    .then(result => {
+  databaseService
+    .getOrders()
+    .then((result) => {
       const ordersMap = new Map();
-      result.forEach(row => {
+      result.forEach((row) => {
         // Create order once
         if (!ordersMap.has(row.order_id)) {
           ordersMap.set(row.order_id, {
@@ -15,7 +15,7 @@ function getOrdersController(req, res) {
             createdAt: row.created_at,
             status: row.order_status,
             paymentDone: row.is_payment_done,
-            orderTotal: row.order_total
+            orderTotal: row.order_total,
           });
         }
 
@@ -27,58 +27,61 @@ function getOrdersController(req, res) {
             status: row.item_status,
             name: row.dish_name,
             category: row.category,
-            price: row.price
+            price: row.price,
           });
         }
       });
 
       res.status(200).send([...ordersMap.values()]);
     })
-    .catch(err => {
+    .catch((err) => {
       console.error("Error fetching orders:", err);
       res.status(500).send({ error: "Failed to fetch orders" });
     });
 }
 
-
 async function postOrder(req, res) {
-    const { items, tag } = req.body;
+  const { items, tag } = req.body;
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ error: "Invalid items in request body" });
-    }
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: "Invalid items in request body" });
+  }
 
-    try{
-      await databaseService.createOrder(tag, items);
-      return res.status(201).json({ message: "Order created successfully" });
-    }catch(err){
-      return res.status(500).json({ error: "Failed to create order" });
-    }
-}
-
-async function closeOrder(req,res) {
-  let orderId = req.query.id;
-  try{
-    
-    let result = await databaseService.closeOrder(orderId);
-    if(!result){
-      return res.status(404).json({error: "Order not found"});
-    }
-    res.status(200).json({message: "Order closed successfully", order: result});
-  } catch(err){
-    console.error("Error closing order:", err);
-    res.status(500).json({error: "Failed to close order"});
+  try {
+    await databaseService.createOrder(tag, items);
+    return res.status(201).json({ message: "Order created successfully" });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to create order" });
   }
 }
 
-async function orderServed(req,res){
-  let { orderId, itemId} = req.body;
+async function closeOrder(req, res) {
+  let orderId = req.query.id;
+  try {
+    let result = await databaseService.closeOrder(orderId);
+    if (!result) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    res
+      .status(200)
+      .json({ message: "Order closed successfully", order: result });
+  } catch (err) {
+    console.error("Error closing order:", err);
+    res.status(500).json({ error: "Failed to close order" });
+  }
+}
+
+async function orderServed(req, res) {
+  let { orderId, itemId } = req.body;
   try {
     let result = await databaseService.toggleItemServedStatus(orderId, itemId);
-    if(!result){
-      return  res.status(404).json({ error: "Order item not found" });
-    }else{
-      return res.status(200).json({ message: "Item served status toggled successfully", status: result.item_status });
+    if (!result) {
+      return res.status(404).json({ error: "Order item not found" });
+    } else {
+      return res.status(200).json({
+        message: "Item served status toggled successfully",
+        status: result.item_status,
+      });
     }
   } catch (error) {
     console.log("Error toggling item served status:", error);
@@ -86,7 +89,7 @@ async function orderServed(req,res){
   }
 }
 
-async function removeItemFromOrder(req,res) {
+async function removeItemFromOrder(req, res) {
   let itemId = req.query.id;
   try {
     await databaseService.removeItemFromOrder(itemId);
@@ -97,4 +100,28 @@ async function removeItemFromOrder(req,res) {
   }
 }
 
-export { getOrdersController as getOrders, postOrder, closeOrder, orderServed, removeItemFromOrder };
+async function toggleOrderPayment(req, res) {
+  let orderId = req.query.id;
+  try {
+    let result = await databaseService.toggleOrderPaymentStatus(orderId);
+    if (!result) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    res.status(200).json({
+      message: "Order payment status toggled successfully",
+      isPaymentDone: result.is_payment_done,
+    });
+  } catch (error) {
+    console.log("Error toggling order payment status:", error);
+    res.status(500).json({ error: "Failed to toggle order payment status" });
+  }
+}
+
+export {
+  getOrdersController as getOrders,
+  postOrder,
+  closeOrder,
+  orderServed,
+  removeItemFromOrder,
+  toggleOrderPayment,
+};

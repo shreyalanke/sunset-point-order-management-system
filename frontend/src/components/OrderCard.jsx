@@ -52,21 +52,8 @@ function OrderCard({
     });
   };
 
-  const handlePaymentToggle = async () => {
-    if (isClosed) return;
-    setIsPaymentLoading(true);
-    try {
-      await onTogglePayment(order.id);
-    } catch (error) {
-      console.error("Error toggling payment", error);
-    } finally {
-      setIsPaymentLoading(false);
-    }
-  };
-
   return (
     <div className="h-full flex flex-col bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative">
-      
       {/* Loading Overlay (Optional: covers the card if you want to block all interaction strictly) */}
       {/* {isBusy && <div className="absolute inset-0 bg-white/50 z-50 cursor-wait" />} */}
 
@@ -174,10 +161,11 @@ function OrderCard({
 
         {/* Action Bar */}
         <div className="p-6 bg-gray-50 flex flex-col lg:flex-row gap-4 items-center justify-between">
-          
           {/* Left: Payment Toggle */}
           <button
-            onClick={handlePaymentToggle}
+            onClick={() => {
+              onTogglePayment(order.id);
+            }}
             disabled={isClosed || isBusy}
             className={`
             flex items-center gap-3 cursor-pointer px-5 py-3 rounded-xl border transition-all w-full lg:w-auto shadow-sm group relative overflow-hidden
@@ -189,14 +177,14 @@ function OrderCard({
             }
           `}
           >
-             <div
+            <div
               className={`
               w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors
               ${order.paymentDone ? "bg-white/20 border-white text-white" : "bg-transparent border-gray-400 text-transparent"}
             `}
             >
               {isPaymentLoading ? (
-                 <Loader2 size={14} className="animate-spin text-current" />
+                <Loader2 size={14} className="animate-spin text-current" />
               ) : (
                 <CheckCircle
                   size={14}
@@ -219,12 +207,12 @@ function OrderCard({
                 title="Cancel Order"
               >
                 {isCancelling ? (
-                   <Loader2 size={18} className="animate-spin" />
+                  <Loader2 size={18} className="animate-spin" />
                 ) : (
-                   <Trash2 size={18} />
+                  <Trash2 size={18} />
                 )}
                 <span className="lg:hidden xl:inline">
-                    {isCancelling ? "Cancelling..." : "Cancel"}
+                  {isCancelling ? "Cancelling..." : "Cancel"}
                 </span>
               </button>
             )}
@@ -246,13 +234,13 @@ function OrderCard({
               ) : (
                 <CheckCircle size={20} />
               )}
-              
+
               <span>
-                {isCompleting 
-                    ? "Processing..." 
-                    : isClosed 
-                        ? "Order Completed" 
-                        : "Complete Order"}
+                {isCompleting
+                  ? "Processing..."
+                  : isClosed
+                    ? "Order Completed"
+                    : "Complete Order"}
               </span>
             </button>
           </div>

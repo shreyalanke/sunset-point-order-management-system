@@ -2,7 +2,13 @@ import { useEffect, useState, useMemo } from "react";
 import Header from "../components/Header";
 import OrderPopup from "../components/OrderPopup";
 import OrderCard from "../components/OrderCard";
-import { getOrders, closeOrder, toggleServedStatus, deleteItemFromOrder } from "../API/orders.js";
+import {
+  getOrders,
+  closeOrder,
+  toggleServedStatus,
+  deleteItemFromOrder,
+  toggleOrderPayment,
+} from "../API/orders.js";
 import {
   Plus,
   Search,
@@ -113,15 +119,15 @@ function OrdersPage() {
           })),
         );
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
-    })()
+    })();
   };
 
   const handleToggleServed = (orderId, itemId) => {
     (async () => {
       try {
-        let result = await toggleServedStatus(orderId,itemId);
+        let result = await toggleServedStatus(orderId, itemId);
         setOrders((prev) =>
           prev.map((order) => {
             if (order.id !== orderId) return order;
@@ -139,21 +145,26 @@ function OrdersPage() {
           }),
         );
       } catch (error) {
-        console.log(error)
+        console.log(error);
       }
-    })()
-    
-
+    })();
   };
 
   const handleTogglePayment = (orderId) => {
-    setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId
-          ? { ...order, paymentDone: !order.paymentDone }
-          : order,
-      ),
-    );
+    (async () => {
+      try {
+        let result = await toggleOrderPayment(orderId);
+        setOrders((prev) =>
+          prev.map((order) =>
+            order.id === orderId
+              ? { ...order, paymentDone: result.isPaymentDone }
+              : order,
+          ),
+        );
+      } catch (error) {
+        console.log(error);
+      }
+    })();
   };
 
   const openConfirmDialog = (type, orderId, callBack) =>
@@ -165,16 +176,26 @@ function OrdersPage() {
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
       if (confirmDialog.callBack) confirmDialog.callBack();
       if (selectedOrderId === orderId) setSelectedOrderId(null);
-      setConfirmDialog({ show: false, type: null, orderId: null, callBack: null });
+      setConfirmDialog({
+        show: false,
+        type: null,
+        orderId: null,
+        callBack: null,
+      });
     } else if (type === "close") {
       (async () => {
         try {
           await closeOrder(orderId);
           fetchOrders();
-          setConfirmDialog({ show: false, type: null, orderId: null, callBack: null });
+          setConfirmDialog({
+            show: false,
+            type: null,
+            orderId: null,
+            callBack: null,
+          });
         } catch (err) {
           console.error("Error closing order:", err);
-        }finally {
+        } finally {
           if (confirmDialog.callBack) confirmDialog.callBack();
         }
       })();
@@ -223,10 +244,12 @@ function OrdersPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col lg:flex-row w-full flex-1 gap-6 h-[calc(100vh-180px)]">
         {/* --- Sidebar (Detailed List) --- */}
-        <aside className={`
+        <aside
+          className={`
           w-full lg:w-87.5 bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col shrink-0
-          ${isSidebarOpen ? 'fixed inset-0 z-40 m-4 lg:m-0 lg:static' : 'hidden lg:flex'}
-        `}>
+          ${isSidebarOpen ? "fixed inset-0 z-40 m-4 lg:m-0 lg:static" : "hidden lg:flex"}
+        `}
+        >
           {/* Mobile Close Button */}
           {isSidebarOpen && (
             <button
@@ -422,9 +445,11 @@ function OrdersPage() {
                 onRemoveItem={handleRemoveItem}
                 onToggleServed={handleToggleServed}
                 onCancelOrder={async (callBack) =>
-                  openConfirmDialog("cancel", selectedOrderId,callBack)
+                  openConfirmDialog("cancel", selectedOrderId, callBack)
                 }
-                onCloseOrder={(callBack) => openConfirmDialog("close", selectedOrderId, callBack)}
+                onCloseOrder={(callBack) =>
+                  openConfirmDialog("close", selectedOrderId, callBack)
+                }
                 onTogglePayment={handleTogglePayment}
                 getOrderTotal={getOrderTotal}
               />
@@ -473,10 +498,14 @@ function OrdersPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() =>{
-                        confirmDialog.callBack && confirmDialog.callBack();
-                        setConfirmDialog({ show: false, type: null, orderId: null })
-                      }}
+                  onClick={() => {
+                    confirmDialog.callBack && confirmDialog.callBack();
+                    setConfirmDialog({
+                      show: false,
+                      type: null,
+                      orderId: null,
+                    });
+                  }}
                   className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
                 >
                   Back
