@@ -2,6 +2,7 @@ import express from "express"
 import cors from "cors"
 import orderRoute from "./routes/order.route.js"
 import dishRoute from "./routes/dish.route.js"
+import adminRoute from "./routes/admin.route.js"
 import { mode } from "./config.js"
 
 let app = express()
@@ -27,6 +28,7 @@ if (mode === "development") {
 
 app.use("/orders", orderRoute)  
 app.use("/dishes", dishRoute)
+app.use("/admin", adminRoute)
 
 
 
