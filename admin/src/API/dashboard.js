@@ -29,3 +29,13 @@ export async function getCategorySalesData() {
         throw error;
     }
 }
+
+export async function getTopSellingItems() {
+    try {
+        const response = await apiClient.get('/admin/dashboard/top-selling-items');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching top selling items:", error);
+        throw error;
+    }   
+}

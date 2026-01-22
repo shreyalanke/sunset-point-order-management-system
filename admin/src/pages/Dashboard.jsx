@@ -11,14 +11,17 @@ import OrderTrendsChart from "../components/dashboard/OrderTrendsChart";
 import CategoryPieChart from "../components/dashboard/CategoryPieChart";
 import TopSellingItems from "../components/dashboard/TopSellingItems";
 import HighValueTable from "../components/dashboard/HighValueTable";
-import { getDashboardData, getTrendData, getCategorySalesData } from "../api/dashboard.js";
+import { getDashboardData, getTrendData, getCategorySalesData ,getTopSellingItems} from "../api/dashboard.js";
+
 
 export default function Dashboard() {
     let [todaysSales, setTodaysSales] = useState(0);
     let [totalOrders, setTotalOrders] = useState(0);
     let [averageOrderValue, setAverageOrderValue] = useState(0);
+     let [topSellingItems, setTopSellingItems] = useState([]);
     let [categorySalesData, setCategorySalesData] = useState([]);
     let [isLoading, setIsLoading] = useState(true);
+    
 
     let [trendData, setTrendData] = useState({data: [], view: 'today'});
 
@@ -38,6 +41,9 @@ export default function Dashboard() {
         updateTrendData('today');
         const cData = await getCategorySalesData();
         setCategorySalesData( cData);
+        const topItems = await getTopSellingItems();
+        setTopSellingItems(topItems);
+        
     }
 
     fetchData();
@@ -102,7 +108,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CategoryPieChart data={categorySalesData} />
-          <TopSellingItems />
+          <TopSellingItems  data= {topSellingItems}/>
         </div>
 
         <HighValueTable />

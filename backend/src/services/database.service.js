@@ -226,9 +226,7 @@ async function getTrendData(range) {
       ORDER BY b.bucket;
     `;
     labelFormat = "hour";
-  }
-
-  else if (range === "week") {
+  } else if (range === "week") {
     query = `
       WITH buckets AS (
         SELECT generate_series(
@@ -254,9 +252,7 @@ async function getTrendData(range) {
       ORDER BY b.bucket;
     `;
     labelFormat = "day";
-  }
-
-  else if (range === "month") {
+  } else if (range === "month") {
     query = `
       WITH buckets AS (
         SELECT generate_series(
@@ -327,17 +323,42 @@ GROUP BY d.category
 ORDER BY value DESC;
 `;
 
-try{
-  let result = await pool.query(query);
-  return result.rows.map(row=>({
-    name: row.name,
-    value: Number(row.value)
-  }));
-}catch(error){
-  throw error;
-}
+  try {
+    let result = await pool.query(query);
+    return result.rows.map((row) => ({
+      name: row.name,
+      value: Number(row.value),
+    }));
+  } catch (error) {
+    throw error;
+  }
 }
 
+async function getTopSellingItems() {
+  const query = `
+      SELECT
+    oi.dish_name_snapshot AS name,
+    SUM(oi.quantity) AS sales
+FROM order_items oi
+JOIN orders o ON o.order_id = oi.order_id
+WHERE
+    oi.item_status = 'SERVED'
+    AND DATE(o.created_at) = CURRENT_DATE
+GROUP BY oi.dish_name_snapshot
+ORDER BY sales DESC
+LIMIT 5;
+    `;
+
+  try {
+    let result = await pool.query(query);
+    return result.rows.map((row) => ({
+      name: row.name,
+      sales: Number(row.sales),
+    }));
+  } catch (error) {
+    throw error;
+  }
+}
 
 export default {
   getDishes,
@@ -350,4 +371,5 @@ export default {
   getDashboardStats,
   getTrendData,
   getCategorySalesData,
+  getTopSellingItems,
 };

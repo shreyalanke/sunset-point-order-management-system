@@ -32,4 +32,17 @@ async function getCategorySalesData(req,res) {
     }
 }
 
-export { dashboardStats, getTrendData, getCategorySalesData };
+async function  getTopSellingItems(req,res) {
+    try{
+        let data = await databaseService.getTopSellingItems();
+        res.status(200).json(data);
+    }
+    catch(error){
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+  
+}
+
+
+
+export { dashboardStats, getTrendData, getCategorySalesData , getTopSellingItems};
