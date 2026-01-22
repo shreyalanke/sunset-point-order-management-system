@@ -4,13 +4,13 @@
   "private": true,
   "description": "Sunset Point",
   "workspaces": [
-    "frontend",
+    "counter",
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:counter\"",
     "dev:backend": "npm run dev --workspace=backend",
-    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:counter": "npm run dev --workspace=counter",
     "build": "npm run build --workspaces"
   },
   "devDependencies": {
