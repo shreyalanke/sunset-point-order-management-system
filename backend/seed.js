@@ -109,15 +109,203 @@ let dishes = [
   { dish_name: "Cigarettes", category: "Misc", price: 25 }
 ];
 
-let seedDishes = async () => {
+let  seedDishes = async () => {
     for (let dish of dishes) {
         let { dish_name, category, price } = dish;
         let query = `INSERT INTO dishes (dish_name, category, price) VALUES ($1, $2, $3)`;
         await pool.query(query, [dish_name, category, price]);
     }   
     console.log("Seeding completed");
-    process.exit();
-   
+ 
 };
 
-seedDishes();
+await seedDishes();
+
+const ingredients = [
+  { name: "Milk", unit: "ml", stock: 50000 },
+  { name: "Sugar", unit: "grams", stock: 10000 },
+  { name: "Tea Leaves", unit: "grams", stock: 3000 },
+  { name: "Coffee Powder", unit: "grams", stock: 3000 },
+  { name: "Chocolate Syrup", unit: "ml", stock: 5000 },
+  { name: "Ice Cubes", unit: "pieces", stock: 2000 },
+
+  { name: "Bread", unit: "slices", stock: 500 },
+  { name: "Butter", unit: "grams", stock: 5000 },
+  { name: "Cheese", unit: "grams", stock: 8000 },
+
+  { name: "Maggi Noodles", unit: "grams", stock: 5000 },
+  { name: "Pasta", unit: "grams", stock: 6000 },
+  { name: "Pizza Base", unit: "pieces", stock: 200 },
+
+  { name: "Vegetables", unit: "grams", stock: 10000 },
+  { name: "Paneer", unit: "grams", stock: 7000 },
+
+  { name: "Burger Bun", unit: "pieces", stock: 300 },
+  { name: "Momo Wrapper", unit: "pieces", stock: 1000 },
+
+  { name: "Oil", unit: "ml", stock: 10000 },
+  { name: "Sauce", unit: "ml", stock: 5000 }
+];
+
+const seedIngredients = async () => {
+  try {
+    for (let ing of ingredients) {
+      // insert ingredient
+      const res = await pool.query(
+        `INSERT INTO ingredients (ingredient_name, unit)
+         VALUES ($1, $2)
+         RETURNING ingredient_id`,
+        [ing.name, ing.unit]
+      );
+
+      const ingredientId = res.rows[0].ingredient_id;
+
+      // insert inventory
+      await pool.query(
+        `INSERT INTO inventory (ingredient_id, stock_quantity)
+         VALUES ($1, $2)`,
+        [ingredientId, ing.stock]
+      );
+    }
+
+    console.log("✅ Ingredients & inventory seeded");
+    
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+};
+
+await seedIngredients();
+
+const recipes = {
+  TEA: [
+    { ingredient: "Milk", qty: 100 },
+    { ingredient: "Sugar", qty: 10 },
+    { ingredient: "Tea Leaves", qty: 5 }
+  ],
+
+  COFFEE: [
+    { ingredient: "Milk", qty: 120 },
+    { ingredient: "Sugar", qty: 10 },
+    { ingredient: "Coffee Powder", qty: 6 }
+  ],
+
+  COLD_COFFEE: [
+    { ingredient: "Milk", qty: 150 },
+    { ingredient: "Sugar", qty: 15 },
+    { ingredient: "Coffee Powder", qty: 6 },
+    { ingredient: "Ice Cubes", qty: 5 }
+  ],
+
+  SANDWICH: [
+    { ingredient: "Bread", qty: 2 },
+    { ingredient: "Butter", qty: 10 },
+    { ingredient: "Cheese", qty: 20 }
+  ],
+
+  MAGGI: [
+    { ingredient: "Maggi Noodles", qty: 70 },
+    { ingredient: "Oil", qty: 5 },
+    { ingredient: "Vegetables", qty: 30 }
+  ],
+
+  PIZZA: [
+    { ingredient: "Pizza Base", qty: 1 },
+    { ingredient: "Cheese", qty: 80 },
+    { ingredient: "Sauce", qty: 30 }
+  ],
+
+  BURGER: [
+    { ingredient: "Burger Bun", qty: 1 },
+    { ingredient: "Cheese", qty: 30 },
+    { ingredient: "Vegetables", qty: 40 }
+  ],
+
+  MOMO: [
+    { ingredient: "Momo Wrapper", qty: 6 },
+    { ingredient: "Paneer", qty: 50 },
+    { ingredient: "Oil", qty: 10 }
+  ]
+};
+
+const dishRecipeMap = {
+  "Tea": "TEA",
+  "Green Tea": "TEA",
+  "Black Tea": "TEA",
+
+  "Hot Coffee": "COFFEE",
+  "Black Coffee": "COFFEE",
+
+  "Cold Coffee": "COLD_COFFEE",
+  "Cold Coffee with Crush": "COLD_COFFEE",
+
+  "Green Chatni Sandwich": "SANDWICH",
+  "Triple Cheese Sandwich": "SANDWICH",
+  "Bombay Masala Sandwich": "SANDWICH",
+
+  "Plain Maggi": "MAGGI",
+  "Masala Maggi": "MAGGI",
+  "Cheese Masala Maggi": "MAGGI",
+
+  "Margarita Pizza": "PIZZA",
+  "Corn Cheese Pizza": "PIZZA",
+  "Special Pizza": "PIZZA",
+
+  "Crispy Veg Burger": "BURGER",
+  "Crispy Paneer Burger": "BURGER",
+
+  "Veg Steam Momo": "MOMO",
+  "Paneer Steam Momo": "MOMO"
+};
+
+const seedDishIngredients = async () => {
+  try {
+    // cache ingredient ids
+    const ingRes = await pool.query(
+      `SELECT ingredient_id, ingredient_name FROM ingredients`
+    );
+
+    const ingredientMap = {};
+    ingRes.rows.forEach(r => {
+      ingredientMap[r.ingredient_name] = r.ingredient_id;
+    });
+
+    // get dishes
+    const dishRes = await pool.query(
+      `SELECT dish_id, dish_name FROM dishes`
+    );
+
+    for (let dish of dishRes.rows) {
+      const recipeKey = dishRecipeMap[dish.dish_name];
+      if (!recipeKey) continue;
+
+      const recipe = recipes[recipeKey];
+
+      for (let item of recipe) {
+        await pool.query(
+          `INSERT INTO dish_ingredients
+           (dish_id, ingredient_id, quantity_needed)
+           VALUES ($1, $2, $3)`,
+          [
+            dish.dish_id,
+            ingredientMap[item.ingredient],
+            item.qty
+          ]
+        );
+      }
+    }
+
+    console.log("✅ Dish ingredients seeded");
+    
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
+};
+
+await seedDishIngredients();
+
+process.exit(0);
+
+
