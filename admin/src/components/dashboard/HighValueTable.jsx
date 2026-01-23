@@ -8,7 +8,7 @@ const ROI_DATA = [
   { id: 5, name: "Truffle Pasta", price: 550, sold: 8, revenue: 4400 },
 ];
 
-export default function HighValueTable() {
+export default function HighValueTable({ data }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="p-6 border-b border-gray-50 flex justify-between items-center">
@@ -37,7 +37,7 @@ export default function HighValueTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {ROI_DATA.sort((a,b) => b.revenue - a.revenue).map((item) => (
+            {data.map((item) => (
               <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4 font-bold text-gray-800">{item.name}</td>
                 <td className="px-6 py-4 text-gray-600">₹{item.price}</td>

@@ -43,6 +43,15 @@ async function  getTopSellingItems(req,res) {
   
 }
 
+async function getHighValueItems(req,res) {
+    try{
+        let data = await databaseService.getHighValueItems();
+        res.status(200).json(data);
+    }catch(error){
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+}
 
 
-export { dashboardStats, getTrendData, getCategorySalesData , getTopSellingItems};
+
+export { dashboardStats, getTrendData, getCategorySalesData , getTopSellingItems, getHighValueItems};

@@ -39,3 +39,13 @@ export async function getTopSellingItems() {
         throw error;
     }   
 }
+
+export async function getHighValueItems() {
+    try {
+        const response = await apiClient.get('/admin/dashboard/high-value-items');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching high value items:", error);
+        throw error;
+    }
+}

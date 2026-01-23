@@ -360,6 +360,44 @@ LIMIT 5;
   }
 }
 
+async function getHighValueItems(){
+  const query = `SELECT
+    d.dish_id AS id,
+    oi.dish_name_snapshot AS name,
+    oi.price_snapshot AS price,
+    SUM(oi.quantity) AS sold,
+    SUM(oi.quantity * oi.price_snapshot) AS revenue
+FROM order_items oi
+JOIN orders o
+    ON o.order_id = oi.order_id
+JOIN dishes d
+    ON d.dish_id = oi.dish_id
+WHERE
+    o.created_at::date = CURRENT_DATE
+    AND o.order_status = 'CLOSED'
+    AND oi.item_status != 'CANCELLED'
+GROUP BY
+    d.dish_id,
+    oi.dish_name_snapshot,
+    oi.price_snapshot
+ORDER BY
+    revenue DESC
+LIMIT 5;
+    `;
+  try {
+    let result = await pool.query(query);
+    return result.rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      price: Number(row.price),
+      sold: Number(row.sold),
+      revenue: Number(row.revenue),
+    }));
+  } catch (error) {
+    throw error;
+  }
+}
+
 export default {
   getDishes,
   getOrders,
@@ -372,4 +410,5 @@ export default {
   getTrendData,
   getCategorySalesData,
   getTopSellingItems,
+  getHighValueItems,
 };

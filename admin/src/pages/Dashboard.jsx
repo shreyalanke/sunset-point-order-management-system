@@ -11,15 +11,16 @@ import OrderTrendsChart from "../components/dashboard/OrderTrendsChart";
 import CategoryPieChart from "../components/dashboard/CategoryPieChart";
 import TopSellingItems from "../components/dashboard/TopSellingItems";
 import HighValueTable from "../components/dashboard/HighValueTable";
-import { getDashboardData, getTrendData, getCategorySalesData ,getTopSellingItems} from "../api/dashboard.js";
+import { getDashboardData, getTrendData, getCategorySalesData ,getTopSellingItems, getHighValueItems} from "../api/dashboard.js";
 
 
 export default function Dashboard() {
     let [todaysSales, setTodaysSales] = useState(0);
     let [totalOrders, setTotalOrders] = useState(0);
     let [averageOrderValue, setAverageOrderValue] = useState(0);
-     let [topSellingItems, setTopSellingItems] = useState([]);
+    let [topSellingItems, setTopSellingItems] = useState([]);
     let [categorySalesData, setCategorySalesData] = useState([]);
+    let [highValueItems, setHighValueItems] = useState([]);
     let [isLoading, setIsLoading] = useState(true);
     
 
@@ -43,7 +44,8 @@ export default function Dashboard() {
         setCategorySalesData( cData);
         const topItems = await getTopSellingItems();
         setTopSellingItems(topItems);
-        
+        const highValue = await getHighValueItems();
+        setHighValueItems(highValue);
     }
 
     fetchData();
@@ -111,7 +113,7 @@ export default function Dashboard() {
           <TopSellingItems  data= {topSellingItems}/>
         </div>
 
-        <HighValueTable />
+        <HighValueTable data={highValueItems}/>
 
       </div>
     </div>
