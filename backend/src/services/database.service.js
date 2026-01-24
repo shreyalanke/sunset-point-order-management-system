@@ -1,7 +1,7 @@
 import pool from "../db.js";
 
 async function getDishes() {
-  let query = `SELECT * FROM dishes`;
+  let query = `SELECT * FROM dishes ORDER BY dish_id`;
   let result = await pool.query(query);
   return result.rows;
 }
@@ -691,6 +691,160 @@ async function getDishCategories() {
   }
 }
 
+async function getAllIngredients() {
+  let query = `SELECT json_agg(
+    json_build_object(
+        'id', ingredient_id::text,
+        'name', ingredient_name,
+        'unit', unit
+    )
+    ORDER BY ingredient_id
+) AS ingredients
+FROM ingredients;`;
+
+  try {
+    const result = await pool.query(query);
+    return result.rows[0].ingredients || [];
+  } catch (error) {
+    console.error("Error fetching all ingredients:", error);
+    throw error;
+  }
+}
+
+async function getDishIngredients(id) {
+  let query = `SELECT
+    i.ingredient_id as id,
+    i.ingredient_name as name,
+    di.quantity_needed as quantity,
+    i.unit
+FROM dish_ingredients di
+JOIN ingredients i
+    ON di.ingredient_id = i.ingredient_id
+JOIN dishes d
+    ON di.dish_id = d.dish_id
+WHERE di.dish_id = $1;`;
+
+  try {
+    const result = await pool.query(query, [id]);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching dish ingredients:", error);
+    throw error;
+  }
+}
+
+async function updateDish(dishData) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const { id, name, price, category, recipe } = dishData;
+
+    /* 1️⃣ Update dish basic info */
+    const dishQuery = `
+      UPDATE dishes
+      SET dish_name = $1,
+          price = $2,
+          category = $3
+      WHERE dish_id = $4
+    `;
+    await client.query(dishQuery, [name, price, category, id]);
+
+    /* 2️⃣ Remove old recipe */
+    const deleteRecipeQuery = `
+      DELETE FROM dish_ingredients
+      WHERE dish_id = $1
+    `;
+    await client.query(deleteRecipeQuery, [id]);
+
+    /* 3️⃣ Insert new recipe */
+    const insertRecipeQuery = `
+      INSERT INTO dish_ingredients (
+        dish_id,
+        ingredient_id,
+        quantity_needed
+      )
+      VALUES ($1, $2, $3)
+    `;
+
+    for (const item of recipe) {
+      await client.query(insertRecipeQuery, [
+        id,
+        item.ingredientId,
+        item.quantity
+      ]);
+    }
+
+    await client.query("COMMIT");
+    return { success: true };
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function createDish(dishData) {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const { name, price, category, recipe } = dishData;
+
+    /* 1️⃣ Insert dish */
+    const insertDishQuery = `
+      INSERT INTO dishes (dish_name, price, category)
+      VALUES ($1, $2, $3)
+      RETURNING dish_id
+    `;
+
+    const dishResult = await client.query(insertDishQuery, [
+      name,
+      price,
+      category
+    ]);
+
+    const dishId = dishResult.rows[0].dish_id;
+
+    /* 2️⃣ Insert recipe */
+    const insertRecipeQuery = `
+      INSERT INTO dish_ingredients (
+        dish_id,
+        ingredient_id,
+        quantity_needed
+      )
+      VALUES ($1, $2, $3)
+    `;
+
+    for (const item of recipe) {
+      await client.query(insertRecipeQuery, [
+        dishId,
+        item.ingredientId,
+        item.quantity
+      ]);
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      success: true,
+      dishId
+    };
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+
+
 export default {
   getDishes,
   getOrders,
@@ -708,5 +862,9 @@ export default {
   getDishPerformance,
   getCategoryPerformance,
   getDishById,
-  getDishCategories
+  getDishCategories,
+  getAllIngredients,
+  getDishIngredients,
+  updateDish,
+  createDish
 };

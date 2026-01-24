@@ -30,7 +30,8 @@ async function getDishById(req,res) {
     try{
         let dishId = req.params.id;
         let dish = await dbService.getDishById(dishId);
-        return res.status(200).json(dish);
+        let ingredients = await dbService.getDishIngredients(dishId);
+        return res.status(200).json({dish, ingredients});
     }catch(error){
         return res.status(500).send({message: "Internal Server Error"})
     }
@@ -47,4 +48,19 @@ async function getCategories(req,res) {
     }
 }
 
-export { getDishes, getDishById, getCategories };
+async function updateDish(req, res) {
+    try {
+        const dishData = req.body;
+        if (dishData.id) {
+            await dbService.updateDish(dishData);
+        } else {
+            await dbService.createDish(dishData);
+        }
+        return res.status(200).json({ message: "Dish updated successfully" });
+    } catch (error) {
+        console.error("Error updating dish:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+}
+
+export { getDishes, getDishById, getCategories, updateDish };

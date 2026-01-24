@@ -6,7 +6,7 @@ import {
   Trash2, 
   Plus, 
   ChefHat, 
-  DollarSign, 
+  IndianRupee, 
   Tag, 
   Scale, 
   Package,
@@ -14,22 +14,8 @@ import {
   Check,
   ChevronDown
 } from 'lucide-react';
-import { getCategories, getMenuItemById } from '../API/menu';
-
-const AVAILABLE_INGREDIENTS = [
-  { id: '1', name: 'Flour', unit: 'kg' },
-  { id: '2', name: 'Tomato Sauce', unit: 'liters' },
-  { id: '3', name: 'Mozzarella Cheese', unit: 'kg' },
-  { id: '4', name: 'Pepperoni', unit: 'slices' },
-  { id: '5', name: 'Basil', unit: 'grams' },
-  { id: '6', name: 'Olive Oil', unit: 'ml' },
-  { id: '7', name: 'Chicken Breast', unit: 'kg' },
-  { id: '8', name: 'Salt', unit: 'grams' },
-  { id: '9', name: 'Black Pepper', unit: 'grams' },
-  { id: '10', name: 'Sugar', unit: 'kg' },
-  { id: '11', name: 'Milk', unit: 'liters' },
-  { id: '12', name: 'Butter', unit: 'kg' },
-];
+import { getCategories, getMenuItemById, updateMenuItem } from '../API/menu';
+import { getAllIngredients } from '../API/inventory';
 
 // --- REUSABLE COMPONENT: Searchable Dropdown ---
 const SearchableDropdown = ({ 
@@ -152,6 +138,7 @@ export default function MenuItemPage() {
     category: '',
   });
   const [ingredientsList, setIngredientsList] = useState([]);
+  const [allIngredients, setAllIngredients] = useState([]);
   const [selectedIngId, setSelectedIngId] = useState('');
   const [quantityInput, setQuantityInput] = useState('');
   const [categories, setCategories] = useState([]);
@@ -160,12 +147,14 @@ export default function MenuItemPage() {
   async function fetchItemById(id) {
     let result = await getMenuItemById(id);
     if (result) {
+      let dish = result.dish;
       setItemDetails({
-        name: result.dish_name || '',
-        price: result.price || '',
-        category: result.category || '',
+        name: dish.dish_name || '',
+        price: dish.price || '',
+        category: dish.category || '',
       });
-      // Mock recipe data load if needed
+      let ingredients = result.ingredients || [];
+      setIngredientsList(ingredients);
     }
   }
 
@@ -175,17 +164,18 @@ export default function MenuItemPage() {
       fetchItemById(id).then(() => setLoading(false));
     }
   }, [isEditMode, id]);
-
-  useEffect(() => {
-    async function fetchCategories() {
-      try {
-        const data = await getCategories();
-        setCategories(data);
-      } catch (error) {
-        console.error("Failed to fetch categories:", error);
-      }
+  async function fetchData() {
+    try {
+      const data = await getCategories();
+      setCategories(data);
+      const allIngredientsData = await getAllIngredients();
+      setAllIngredients(allIngredientsData);
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
     }
-    fetchCategories();
+  }
+  useEffect(() => {
+    fetchData();
   }, []);
 
   const handleDetailChange = (e) => {
@@ -204,7 +194,7 @@ export default function MenuItemPage() {
       alert("Ingredient already exists in the list.");
       return;
     }
-    const ingredientObj = AVAILABLE_INGREDIENTS.find(ing => ing.id === selectedIngId);
+    const ingredientObj = allIngredients.find(ing => ing.id === selectedIngId);
     const newIngredient = { ...ingredientObj, quantity: quantityInput };
     setIngredientsList([...ingredientsList, newIngredient]);
     setSelectedIngId('');
@@ -230,12 +220,14 @@ export default function MenuItemPage() {
         quantity: parseFloat(ing.quantity)
       }))
     };
-    console.log("Submitting Payload:", payload);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await updateMenuItem(payload);
       alert("Saved successfully!");
       navigate('/menu');
-    }, 1000);
+    } catch (error) {
+      console.error("Failed to save menu item:", error);
+      alert("Failed to save. Please try again.");
+    }
   };
 
   return (
@@ -316,7 +308,7 @@ export default function MenuItemPage() {
                   <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Price</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <DollarSign size={16} className="text-slate-400" />
+                      <IndianRupee size={16} className="text-slate-400" />
                     </div>
                     <input
                       type="number"
@@ -367,7 +359,7 @@ export default function MenuItemPage() {
                       <div className="flex-grow w-full relative z-40">
                         <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Select Ingredient</label>
                         <SearchableDropdown 
-                          options={AVAILABLE_INGREDIENTS}
+                          options={allIngredients}
                           value={selectedIngId}
                           onChange={setSelectedIngId}
                           placeholder="Search ingredients..."

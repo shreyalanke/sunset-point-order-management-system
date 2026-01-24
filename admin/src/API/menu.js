@@ -29,3 +29,13 @@ export async function getCategories() {
         throw error;
     }
 }
+
+export async function updateMenuItem(itemData) {
+    try {
+        const response = await apiClient.put(`/dishes`, itemData);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating menu item:`, error);
+        throw error;
+    }
+}
