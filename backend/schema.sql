@@ -74,6 +74,7 @@ EXECUTE FUNCTION trg_update_order_total();
 CREATE TABLE ingredients (
     ingredient_id SERIAL PRIMARY KEY,
     ingredient_name VARCHAR(100) NOT NULL UNIQUE,
+    max_stock NUMERIC(10,2) NOT NULL CHECK (max_stock > 0),
     unit VARCHAR(20) NOT NULL  -- e.g. grams, ml, pieces
 );
 

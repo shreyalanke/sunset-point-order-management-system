@@ -122,29 +122,29 @@ let  seedDishes = async () => {
 await seedDishes();
 
 const ingredients = [
-  { name: "Milk", unit: "ml", stock: 50000 },
-  { name: "Sugar", unit: "grams", stock: 10000 },
-  { name: "Tea Leaves", unit: "grams", stock: 3000 },
-  { name: "Coffee Powder", unit: "grams", stock: 3000 },
-  { name: "Chocolate Syrup", unit: "ml", stock: 5000 },
-  { name: "Ice Cubes", unit: "pieces", stock: 2000 },
+  { name: "Milk", category: "Dairy", unit: "ml", stock: 50000, max: 75000 },
+  { name: "Sugar", category: "Sweeteners", unit: "grams", stock: 10000, max: 20000 },
+  { name: "Tea Leaves", category: "Beverage Base", unit: "grams", stock: 3000, max: 6000 },
+  { name: "Coffee Powder", category: "Beverage Base", unit: "grams", stock: 3000, max: 6000 },
+  { name: "Chocolate Syrup", category: "Beverage Base", unit: "ml", stock: 5000, max: 8000 },
+  { name: "Ice Cubes", category: "Utilities", unit: "pieces", stock: 2000, max: 4000 },
 
-  { name: "Bread", unit: "slices", stock: 500 },
-  { name: "Butter", unit: "grams", stock: 5000 },
-  { name: "Cheese", unit: "grams", stock: 8000 },
+  { name: "Bread", category: "Bakery", unit: "slices", stock: 500, max: 1000 },
+  { name: "Butter", category: "Dairy", unit: "grams", stock: 5000, max: 8000 },
+  { name: "Cheese", category: "Dairy", unit: "grams", stock: 8000, max: 12000 },
 
-  { name: "Maggi Noodles", unit: "grams", stock: 5000 },
-  { name: "Pasta", unit: "grams", stock: 6000 },
-  { name: "Pizza Base", unit: "pieces", stock: 200 },
+  { name: "Maggi Noodles", category: "Raw Material", unit: "grams", stock: 5000, max: 10000 },
+  { name: "Pasta", category: "Raw Material", unit: "grams", stock: 6000, max: 12000 },
+  { name: "Pizza Base", category: "Bakery", unit: "pieces", stock: 200, max: 400 },
 
-  { name: "Vegetables", unit: "grams", stock: 10000 },
-  { name: "Paneer", unit: "grams", stock: 7000 },
+  { name: "Vegetables", category: "Vegetables", unit: "grams", stock: 10000, max: 20000 },
+  { name: "Paneer", category: "Dairy", unit: "grams", stock: 7000, max: 12000 },
 
-  { name: "Burger Bun", unit: "pieces", stock: 300 },
-  { name: "Momo Wrapper", unit: "pieces", stock: 1000 },
+  { name: "Burger Bun", category: "Bakery", unit: "pieces", stock: 300, max: 600 },
+  { name: "Momo Wrapper", category: "Raw Material", unit: "pieces", stock: 1000, max: 2000 },
 
-  { name: "Oil", unit: "ml", stock: 10000 },
-  { name: "Sauce", unit: "ml", stock: 5000 }
+  { name: "Oil", category: "Oil & Fats", unit: "ml", stock: 10000, max: 20000 },
+  { name: "Sauce", category: "Condiments", unit: "ml", stock: 5000, max: 10000 }
 ];
 
 const seedIngredients = async () => {
@@ -152,11 +152,12 @@ const seedIngredients = async () => {
     for (let ing of ingredients) {
       // insert ingredient
       const res = await pool.query(
-        `INSERT INTO ingredients (ingredient_name, unit)
-         VALUES ($1, $2)
-         RETURNING ingredient_id`,
-        [ing.name, ing.unit]
+        `INSERT INTO ingredients (ingredient_name, category, unit, max_stock)
+        VALUES ($1, $2, $3, $4)
+        RETURNING ingredient_id`,
+        [ing.name, ing.category, ing.unit, ing.max]
       );
+
 
       const ingredientId = res.rows[0].ingredient_id;
 
