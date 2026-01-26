@@ -19,7 +19,8 @@ import {
   ChevronDown,
   Plus
 } from 'lucide-react';
-import { getIngredientDetails, updateIngredientStock, updateIngredientDetails } from '../API/inventory';
+import { getIngredientDetails, updateIngredientStock, updateIngredientDetails, getAllIngredients } from '../API/inventory';
+import { getCategories } from '../API/menu';
 
 // --- REUSABLE COMPONENT: Searchable Dropdown with Add Option ---
 const SearchableDropdown = ({ 
@@ -174,7 +175,34 @@ export default function InventoryItemDetailPage() {
   
   // Form State for editing details
   const [formData, setFormData] = useState({});
-  const [categories, setCategories] = useState(['Produce', 'Dairy', 'Meat', 'Dry Goods', 'Spices', 'Beverages', 'Condiments']);
+  const [categories, setCategories] = useState([]);
+  const [units, setUnits] = useState([]);
+
+  // Fetch Categories and Units
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const ingredients = await getAllIngredients();
+        
+        // Extract unique categories
+        const uniqueCategories = [...new Set(ingredients.map(ing => ing.category).filter(Boolean))];
+        setCategories(uniqueCategories);
+        
+        // Extract unique units
+        const uniqueUnits = [...new Set(ingredients.map(ing => ing.unit).filter(Boolean))];
+        const unitsArray = uniqueUnits.map(unit => ({
+          value: unit,
+          label: unit.charAt(0).toUpperCase() + unit.slice(1)
+        }));
+        setUnits(unitsArray);
+      } catch (error) {
+        console.error("Error fetching data", error);
+        setCategories([]);
+        setUnits([]);
+      }
+    };
+    loadData();
+  }, []);
 
   // Fetch Data
   useEffect(() => {
@@ -202,6 +230,14 @@ export default function InventoryItemDetailPage() {
       setCategories(prev => [...prev, newCategory]);
     }
     setFormData(prev => ({ ...prev, category: newCategory }));
+  };
+
+  const handleAddNewUnit = (newUnit) => {
+    const newUnitObj = { value: newUnit.toLowerCase(), label: newUnit };
+    if (!units.find(u => u.value === newUnit.toLowerCase())) {
+      setUnits(prev => [...prev, newUnitObj]);
+    }
+    setFormData(prev => ({ ...prev, unit: newUnit.toLowerCase() }));
   };
 
   // --- HANDLERS ---
@@ -356,12 +392,16 @@ export default function InventoryItemDetailPage() {
                 </div>
                 <div>
                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Unit of Measure</label>
-                   <input 
-                      type="text" 
-                      value={formData.unit} 
-                      onChange={(e) => setFormData({...formData, unit: e.target.value})}
-                      className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-800" 
-                    />
+                   <SearchableDropdown
+                     options={units}
+                     value={formData.unit}
+                     onChange={(val) => setFormData({...formData, unit: val})}
+                     placeholder="Select unit..."
+                     labelKey="label"
+                     valueKey="value"
+                     allowAdd={true}
+                     onAddNew={handleAddNewUnit}
+                   />
                 </div>
                 <div className="md:col-span-2 flex justify-end gap-3 mt-2">
                    <button type="button" onClick={() => setIsEditing(false)} className="px-6 py-2.5 rounded-lg text-slate-500 font-bold hover:bg-slate-100">Cancel</button>

@@ -445,7 +445,10 @@ export default function InventoryPage() {
             </select>
 
             {/* Add Button */}
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow-sm transition-all ml-auto sm:ml-0">
+            <button 
+              onClick={() => navigate('/inventory/add')}
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow-sm transition-all ml-auto sm:ml-0"
+            >
               <Plus size={18} />
               <span className="hidden sm:inline">Add Item</span>
             </button>
