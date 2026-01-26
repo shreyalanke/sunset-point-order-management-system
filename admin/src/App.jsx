@@ -5,6 +5,9 @@ import Orders from './pages/Orders.jsx';
 import Menu from './pages/Menu.jsx';
 import Staff from './pages/Staff.jsx';
 import MenuItemPage from './pages/MenuItemPage.jsx';
+import InventoryPage from './pages/InventoryPage.jsx';
+import InventoryItemDetailPage from './pages/InventoryItemDetailPage.jsx';
+import AddInventoryItemPage from './pages/AddInventoryItemPage.jsx';
 
 function App() {
   return (
@@ -19,6 +22,9 @@ function App() {
             <Route path="/menu" element={<Menu />} />
             <Route path="/menu/item/:id" element={<MenuItemPage />} /> 
             <Route path="/staff" element={<Staff />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/inventory/add" element={<AddInventoryItemPage />} />
+            <Route path="/inventory/:id" element={<InventoryItemDetailPage />} />
           </Routes>
         </main>
       </div>

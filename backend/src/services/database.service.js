@@ -694,13 +694,19 @@ async function getDishCategories() {
 async function getAllIngredients() {
   let query = `SELECT json_agg(
     json_build_object(
-        'id', ingredient_id::text,
-        'name', ingredient_name,
-        'unit', unit
+        'id', i.ingredient_id,
+        'name', i.ingredient_name,
+        'unit', i.unit,
+        'category', i.category,
+        'max', i.max_stock,
+        'current', COALESCE(inv.stock_quantity, 0),
+        'threshold', COALESCE(i.max_stock * 0.25, 5),
+        'lastRestocked', inv.restock_timestamp
     )
-    ORDER BY ingredient_id
+    ORDER BY i.ingredient_id
 ) AS ingredients
-FROM ingredients;`;
+FROM ingredients i
+LEFT JOIN inventory inv ON i.ingredient_id = inv.ingredient_id;`;
 
   try {
     const result = await pool.query(query);
@@ -843,6 +849,150 @@ async function createDish(dishData) {
   }
 }
 
+async function updateIngredientStock(ingredientId, newQuantity) {
+  const client = await pool.connect();
+  
+  try {
+    await client.query("BEGIN");
+    
+    // Check if inventory record exists
+    const checkQuery = `SELECT ingredient_id FROM inventory WHERE ingredient_id = $1`;
+    const checkResult = await client.query(checkQuery, [ingredientId]);
+    
+    if (checkResult.rows.length > 0) {
+      // Update existing record
+      const updateQuery = `
+        UPDATE inventory 
+        SET stock_quantity = $1, 
+            restock_timestamp = CURRENT_TIMESTAMP 
+        WHERE ingredient_id = $2
+        RETURNING *
+      `;
+      await client.query(updateQuery, [newQuantity, ingredientId]);
+    } else {
+      // Insert new record
+      const insertQuery = `
+        INSERT INTO inventory (ingredient_id, stock_quantity, restock_timestamp)
+        VALUES ($1, $2, CURRENT_TIMESTAMP)
+        RETURNING *
+      `;
+      await client.query(insertQuery, [ingredientId, newQuantity]);
+    }
+    
+    await client.query("COMMIT");
+    return { success: true };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error updating ingredient stock:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function addIngredient(ingredientData) {
+  const client = await pool.connect();
+  
+  try {
+    await client.query("BEGIN");
+    
+    const { name, unit, category, maxStock, initialStock } = ingredientData;
+    
+    // Insert ingredient
+    const insertIngredientQuery = `
+      INSERT INTO ingredients (ingredient_name, unit, category, max_stock)
+      VALUES ($1, $2, $3, $4)
+      RETURNING ingredient_id
+    `;
+    const result = await client.query(insertIngredientQuery, [name, unit, category, maxStock]);
+    const ingredientId = result.rows[0].ingredient_id;
+    
+    // Insert initial inventory if provided
+    if (initialStock !== undefined && initialStock !== null) {
+      const insertInventoryQuery = `
+        INSERT INTO inventory (ingredient_id, stock_quantity, restock_timestamp)
+        VALUES ($1, $2, CURRENT_TIMESTAMP)
+      `;
+      await client.query(insertInventoryQuery, [ingredientId, initialStock]);
+    }
+    
+    await client.query("COMMIT");
+    return { success: true, ingredientId };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("Error adding ingredient:", error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function getIngredientDetails(ingredientId) {
+  const query = `
+    SELECT json_build_object(
+      'id', i.ingredient_id,
+      'name', i.ingredient_name,
+      'unit', i.unit,
+      'category', i.category,
+      'max', i.max_stock,
+      'current', COALESCE(inv.stock_quantity, 0),
+      'threshold', COALESCE(i.max_stock * 0.25, 5),
+      'lastRestocked', inv.restock_timestamp,
+      'sku', 'SKU-' || (1000 + i.ingredient_id),
+      'associatedDishes', COALESCE(
+        (SELECT json_agg(
+          json_build_object(
+            'id', d.dish_id,
+            'name', d.dish_name,
+            'quantityRequired', di.quantity_needed
+          )
+          ORDER BY d.dish_name
+        )
+        FROM dish_ingredients di
+        JOIN dishes d ON di.dish_id = d.dish_id
+        WHERE di.ingredient_id = i.ingredient_id),
+        '[]'::json
+      )
+    ) AS ingredient
+    FROM ingredients i
+    LEFT JOIN inventory inv ON i.ingredient_id = inv.ingredient_id
+    WHERE i.ingredient_id = $1
+  `;
+  
+  try {
+    const result = await pool.query(query, [ingredientId]);
+    return result.rows[0]?.ingredient || null;
+  } catch (error) {
+    console.error("Error fetching ingredient details:", error);
+    throw error;
+  }
+}
+
+async function updateIngredientDetails(ingredientId, ingredientData) {
+  const { name, category, max, unit } = ingredientData;
+  
+  const query = `
+    UPDATE ingredients
+    SET ingredient_name = $1,
+        category = $2,
+        max_stock = $3,
+        unit = $4
+    WHERE ingredient_id = $5
+    RETURNING ingredient_id
+  `;
+  
+  try {
+    const result = await pool.query(query, [name, category, max, unit, ingredientId]);
+    if (result.rows.length === 0) {
+      throw new Error('Ingredient not found');
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating ingredient details:", error);
+    throw error;
+  }
+}
+
 
 
 export default {
@@ -866,5 +1016,9 @@ export default {
   getAllIngredients,
   getDishIngredients,
   updateDish,
-  createDish
+  createDish,
+  updateIngredientStock,
+  addIngredient,
+  getIngredientDetails,
+  updateIngredientDetails
 };

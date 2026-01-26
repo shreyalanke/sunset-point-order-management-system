@@ -74,12 +74,16 @@ EXECUTE FUNCTION trg_update_order_total();
 CREATE TABLE ingredients (
     ingredient_id SERIAL PRIMARY KEY,
     ingredient_name VARCHAR(100) NOT NULL UNIQUE,
+    max_stock NUMERIC(10,2) NOT NULL CHECK (max_stock > 0),
+    category VARCHAR(50) NOT NULL DEFAULT 'General',
     unit VARCHAR(20) NOT NULL  -- e.g. grams, ml, pieces
 );
 
 CREATE TABLE inventory (
     ingredient_id INTEGER PRIMARY KEY,
     stock_quantity NUMERIC(10,2) NOT NULL CHECK (stock_quantity >= 0),
+    restock_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
     FOREIGN KEY (ingredient_id)
         REFERENCES ingredients(ingredient_id)
         ON DELETE CASCADE
