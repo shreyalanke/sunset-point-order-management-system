@@ -6,6 +6,7 @@ import Menu from './pages/Menu.jsx';
 import Staff from './pages/Staff.jsx';
 import MenuItemPage from './pages/MenuItemPage.jsx';
 import InventoryPage from './pages/InventoryPage.jsx';
+import InventoryItemDetailPage from './pages/InventoryItemDetailPage.jsx';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
             <Route path="/menu/item/:id" element={<MenuItemPage />} /> 
             <Route path="/staff" element={<Staff />} />
             <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/inventory/:id" element={<InventoryItemDetailPage />} />
           </Routes>
         </main>
       </div>

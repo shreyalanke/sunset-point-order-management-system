@@ -17,7 +17,7 @@ import {
 import { getCategories, getMenuItemById, updateMenuItem } from '../API/menu';
 import { getAllIngredients } from '../API/inventory';
 
-// --- REUSABLE COMPONENT: Searchable Dropdown ---
+// --- REUSABLE COMPONENT: Searchable Dropdown with Add Option ---
 const SearchableDropdown = ({ 
   options, 
   value, 
@@ -25,7 +25,9 @@ const SearchableDropdown = ({
   placeholder = "Select...", 
   labelKey = "name", 
   valueKey = "id",   
-  subLabelKey = null 
+  subLabelKey = null,
+  allowAdd = false,
+  onAddNew = null
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -54,6 +56,19 @@ const SearchableDropdown = ({
 
   const getDisplayLabel = (opt) => typeof opt === 'string' ? opt : opt[labelKey];
 
+  const handleAddNew = () => {
+    if (searchTerm.trim() && onAddNew) {
+      onAddNew(searchTerm.trim());
+      setSearchTerm("");
+      setIsOpen(false);
+    }
+  };
+
+  const isSearchTermNew = searchTerm.trim() && !filteredOptions.some(opt => {
+    const label = typeof opt === 'string' ? opt : opt[labelKey];
+    return label.toLowerCase() === searchTerm.toLowerCase();
+  });
+
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button */}
@@ -63,7 +78,9 @@ const SearchableDropdown = ({
           isOpen ? 'border-slate-400 ring-2 ring-slate-100' : 'border-slate-200 hover:border-slate-300'
         }`}
       >
-        <span className={`text-sm ${selectedObj ? 'text-slate-800' : 'text-slate-400'}`}>
+        <span className={`text-sm ${
+          selectedObj ? 'text-slate-800 font-medium' : 'text-slate-400'
+        }`}>
           {selectedObj ? getDisplayLabel(selectedObj) : placeholder}
         </span>
         <ChevronDown size={16} className="text-slate-400" />
@@ -81,7 +98,7 @@ const SearchableDropdown = ({
                 type="text"
                 autoFocus
                 className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-md focus:outline-none focus:border-slate-500 placeholder-slate-400"
-                placeholder="Search..."
+                placeholder="Search or type to add..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -90,34 +107,47 @@ const SearchableDropdown = ({
 
           {/* Options List */}
           <div className="max-h-60 overflow-y-auto">
-            {filteredOptions.length === 0 ? (
+            {filteredOptions.length === 0 && !isSearchTermNew ? (
               <div className="p-3 text-sm text-slate-400 text-center">No results found</div>
             ) : (
-              filteredOptions.map((opt, idx) => {
-                const optValue = typeof opt === 'string' ? opt : opt[valueKey];
-                const optLabel = typeof opt === 'string' ? opt : opt[labelKey];
-                const optSubLabel = subLabelKey && typeof opt !== 'string' ? opt[subLabelKey] : null;
-                const isSelected = optValue === value;
+              <>
+                {filteredOptions.map((opt, idx) => {
+                  const optValue = typeof opt === 'string' ? opt : opt[valueKey];
+                  const optLabel = typeof opt === 'string' ? opt : opt[labelKey];
+                  const optSubLabel = subLabelKey && typeof opt !== 'string' ? opt[subLabelKey] : null;
+                  const isSelected = optValue === value;
 
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      onChange(optValue);
-                      setIsOpen(false);
-                    }}
-                    className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between hover:bg-slate-50 ${
-                      isSelected ? 'bg-slate-100 text-slate-900 font-medium' : 'text-slate-700'
-                    }`}
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium">{optLabel}</span>
-                      {optSubLabel && <span className="text-xs text-slate-400">{optSubLabel}</span>}
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => {
+                        onChange(optValue);
+                        setIsOpen(false);
+                      }}
+                      className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between hover:bg-slate-50 ${
+                        isSelected ? 'bg-slate-100 text-slate-900 font-medium' : 'text-slate-700'
+                      }`}
+                    >
+                      <div className="flex flex-col">
+                        <span className="font-medium">{optLabel}</span>
+                        {optSubLabel && <span className="text-xs text-slate-400">{optSubLabel}</span>}
+                      </div>
+                      {isSelected && <Check size={14} />}
                     </div>
-                    {isSelected && <Check size={14} />}
+                  );
+                })}
+                
+                {/* Add New Option Button */}
+                {allowAdd && isSearchTermNew && (
+                  <div
+                    onClick={handleAddNew}
+                    className="px-3 py-2 text-sm cursor-pointer flex items-center gap-2 hover:bg-blue-50 border-t border-slate-100 text-blue-600 font-medium"
+                  >
+                    <Plus size={14} />
+                    <span>Add "{searchTerm}"</span>
                   </div>
-                );
-              })
+                )}
+              </>
             )}
           </div>
         </div>
@@ -164,6 +194,7 @@ export default function MenuItemPage() {
       fetchItemById(id).then(() => setLoading(false));
     }
   }, [isEditMode, id]);
+  
   async function fetchData() {
     try {
       const data = await getCategories();
@@ -174,9 +205,17 @@ export default function MenuItemPage() {
       console.error("Failed to fetch categories:", error);
     }
   }
+  
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    // Add item's category to the list if it doesn't exist
+    if (itemDetails.category && !categories.includes(itemDetails.category)) {
+      setCategories(prev => [...prev, itemDetails.category]);
+    }
+  }, [itemDetails.category]);
 
   const handleDetailChange = (e) => {
     const { name, value } = e.target;
@@ -185,6 +224,13 @@ export default function MenuItemPage() {
 
   const handleCategoryChange = (val) => {
     setItemDetails(prev => ({ ...prev, category: val }));
+  };
+
+  const handleAddNewCategory = (newCategory) => {
+    if (!categories.includes(newCategory)) {
+      setCategories(prev => [...prev, newCategory]);
+    }
+    setItemDetails(prev => ({ ...prev, category: newCategory }));
   };
 
   const handleAddIngredient = () => {
@@ -329,6 +375,8 @@ export default function MenuItemPage() {
                     value={itemDetails.category}
                     onChange={handleCategoryChange}
                     placeholder="Select Category..."
+                    allowAdd={true}
+                    onAddNew={handleAddNewCategory}
                   />
                 </div>
               </div>

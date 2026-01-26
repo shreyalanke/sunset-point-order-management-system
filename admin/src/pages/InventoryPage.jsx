@@ -1,35 +1,71 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Plus, 
-  Filter, 
   AlertTriangle, 
   Package, 
   CheckCircle2, 
   RefreshCcw,
   X,
   Save,
-  ArrowLeft,
-  Settings,
   Edit3,
-  TrendingUp
+  TrendingUp,
+  LayoutList, 
+  Layers,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Clock
 } from 'lucide-react';
-
-// --- MOCK DATA ---
-const INITIAL_INVENTORY = [
-  { id: 1, name: 'Tomato Sauce', current: 4, max: 20, unit: 'liters', threshold: 5, category: 'Sauces' },
-  { id: 2, name: 'Mozzarella Cheese', current: 18, max: 20, unit: 'kg', threshold: 5, category: 'Dairy' },
-  { id: 3, name: 'Flour', current: 45, max: 50, unit: 'kg', threshold: 10, category: 'Dry Goods' },
-  { id: 4, name: 'Pepperoni', current: 2, max: 15, unit: 'kg', threshold: 3, category: 'Meats' }, 
-  { id: 5, name: 'Olive Oil', current: 8, max: 10, unit: 'liters', threshold: 2, category: 'Oils' },
-  { id: 6, name: 'Basil', current: 0.2, max: 1, unit: 'kg', threshold: 0.3, category: 'Herbs' }, 
-  { id: 7, name: 'Chicken Breast', current: 12, max: 30, unit: 'kg', threshold: 8, category: 'Meats' },
-];
+import { getAllIngredients, updateIngredientStock } from '../API/inventory';
 
 export default function InventoryPage() {
-  const [items, setItems] = useState(INITIAL_INVENTORY);
-  const [activeView, setActiveView] = useState('list'); // 'list' or 'detail'
-  const [detailItem, setDetailItem] = useState(null); // Item to show in placeholder
+  const navigate = useNavigate();
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // --- NEW: VIEW & SORT STATE ---
+  const [viewMode, setViewMode] = useState('flat'); // 'flat' (All) or 'grouped' (Category)
+  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+
+  // Fetch ingredients on mount
+  useEffect(() => {
+    fetchIngredients();
+  }, []);
+
+  const fetchIngredients = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getAllIngredients();
+      setItems(data || []);
+    } catch (err) {
+      console.error("Failed to fetch ingredients:", err);
+      setError("Failed to load inventory data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format relative time for last updated
+  const formatRelativeTime = (timestamp) => {
+    if (!timestamp) return 'Never';
+    
+    const now = new Date();
+    const updated = new Date(timestamp);
+    const diffMs = now - updated;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 30) return `${diffDays}d ago`;
+    return updated.toLocaleDateString();
+  };
 
   // --- SEARCH & FILTER ---
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,11 +75,21 @@ export default function InventoryPage() {
   const [isRefillOpen, setIsRefillOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [refillAmount, setRefillAmount] = useState("");
-  const [updateMode, setUpdateMode] = useState("add"); // 'add' or 'set'
+  const [updateMode, setUpdateMode] = useState("add"); 
 
-  // --- COMPUTED DATA ---
-  const filteredItems = useMemo(() => {
-    return items.filter(item => {
+  // --- SORTING HANDLER ---
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // --- COMPUTED DATA (FILTERED & SORTED) ---
+  const processedItems = useMemo(() => {
+    // 1. Filter
+    let result = items.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
       const isLowStock = item.current <= item.threshold;
       
@@ -53,58 +99,104 @@ export default function InventoryPage() {
 
       return matchesSearch && matchesFilter;
     });
-  }, [items, searchQuery, filterStatus]);
+
+    // 2. Sort
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        let aValue, bValue;
+
+        // Handle specific computed columns
+        if (sortConfig.key === 'percentage') {
+          aValue = (a.current / a.max);
+          bValue = (b.current / b.max);
+        } else {
+          aValue = a[sortConfig.key];
+          bValue = b[sortConfig.key];
+        }
+
+        // String comparison
+        if (typeof aValue === 'string') {
+           aValue = aValue.toLowerCase();
+           bValue = bValue.toLowerCase();
+        }
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [items, searchQuery, filterStatus, sortConfig]);
+
+  // --- GROUPED DATA (FOR CATEGORY VIEW) ---
+  const groupedItems = useMemo(() => {
+    if (viewMode !== 'grouped') return null;
+    
+    const groups = {};
+    processedItems.forEach(item => {
+      const cat = item.category || 'Uncategorized';
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    });
+    
+    // Sort categories alphabetically
+    return Object.keys(groups).sort().reduce((obj, key) => {
+      obj[key] = groups[key];
+      return obj;
+    }, {});
+  }, [processedItems, viewMode]);
 
   const totalItems = items.length;
   const lowStockCount = items.filter(i => i.current <= i.threshold).length;
 
   // --- HANDLERS ---
-  
-  // 1. Navigation Handler
   const handleRowClick = (item) => {
-    setDetailItem(item);
-    setActiveView('detail');
+    navigate(`/inventory/${item.id}`);
   };
 
-  // 2. Open Modal Handler (Stops bubbling so row click isn't triggered)
   const openRefillModal = (e, item) => {
     e.stopPropagation(); 
     setSelectedItem(item);
     setRefillAmount("");
-    setUpdateMode("add"); // Default to 'add' when opening
+    setUpdateMode("add");
     setIsRefillOpen(true);
   };
 
-  // 3. Submit Stock Update
-  const handleRefillSubmit = (e) => {
+  const handleRefillSubmit = async (e) => {
     e.preventDefault();
     if (!selectedItem || !refillAmount) return;
 
     const inputVal = parseFloat(refillAmount);
-    
-    setItems(prev => prev.map(item => {
-      if (item.id === selectedItem.id) {
-        let newAmount = item.current;
-        
-        if (updateMode === 'add') {
-          newAmount = item.current + inputVal;
-        } else {
-          // 'set' mode
-          newAmount = inputVal;
-        }
-
-        // Prevent negative numbers (optional)
-        newAmount = Math.max(0, newAmount);
-
-        return { ...item, current: parseFloat(newAmount.toFixed(2)) };
+    try {
+      let newAmount;
+      if (updateMode === 'add') {
+        newAmount = selectedItem.current + inputVal;
+      } else {
+        newAmount = inputVal;
       }
-      return item;
-    }));
+      newAmount = Math.max(0, newAmount);
 
-    setIsRefillOpen(false);
+      await updateIngredientStock(selectedItem.id, newAmount);
+      
+      setItems(prev => prev.map(item => {
+        if (item.id === selectedItem.id) {
+          return { 
+            ...item, 
+            current: parseFloat(newAmount.toFixed(2)),
+            lastRestocked: new Date().toISOString()
+          };
+        }
+        return item;
+      }));
+
+      setIsRefillOpen(false);
+    } catch (err) {
+      console.error("Failed to update stock:", err);
+      alert("Failed to update stock. Please try again.");
+    }
   };
 
-  // --- VISUAL HELPERS ---
   const getProgressColor = (current, max, threshold) => {
     const percentage = (current / max) * 100;
     if (current <= threshold) return "bg-red-500"; 
@@ -112,28 +204,145 @@ export default function InventoryPage() {
     return "bg-emerald-500";                      
   };
 
-  // --- RENDER: DETAIL PLACEHOLDER ---
-  if (activeView === 'detail') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-        <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Settings size={32} />
+  // --- COMPONENT: TABLE HEADER ---
+  const TableHeader = () => (
+    <thead className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
+      <tr>
+        <th 
+          onClick={() => handleSort('name')}
+          className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors group"
+        >
+          <div className="flex items-center gap-2">
+            Ingredient Name
+            {sortConfig.key === 'name' ? (
+              sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>
+            ) : <ArrowUpDown size={14} className="text-slate-300 group-hover:text-slate-500"/>}
           </div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">{detailItem?.name}</h2>
-          <p className="text-slate-500 mb-6">Detailed analytics and history for this item are coming soon.</p>
-          
-          <button 
-            onClick={() => setActiveView('list')}
-            className="flex items-center justify-center gap-2 w-full py-3 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all"
+        </th>
+        {viewMode !== 'grouped' && (
+          <th 
+            onClick={() => handleSort('category')}
+            className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors group"
           >
-            <ArrowLeft size={18} />
-            Back to Inventory
-          </button>
-        </div>
-      </div>
+             <div className="flex items-center gap-2">
+              Category
+              {sortConfig.key === 'category' ? (
+                sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>
+              ) : <ArrowUpDown size={14} className="text-slate-300 group-hover:text-slate-500"/>}
+            </div>
+          </th>
+        )}
+        <th 
+          onClick={() => handleSort('percentage')}
+          className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-1/3 cursor-pointer hover:bg-slate-100 transition-colors group"
+        >
+          <div className="flex items-center gap-2">
+            Stock Level
+            {sortConfig.key === 'percentage' ? (
+              sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>
+            ) : <ArrowUpDown size={14} className="text-slate-300 group-hover:text-slate-500"/>}
+          </div>
+        </th>
+        <th 
+          onClick={() => handleSort('current')}
+          className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors group"
+        >
+          <div className="flex items-center gap-2">
+            Quantity
+            {sortConfig.key === 'current' ? (
+              sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>
+            ) : <ArrowUpDown size={14} className="text-slate-300 group-hover:text-slate-500"/>}
+          </div>
+        </th>
+        <th 
+          onClick={() => handleSort('lastRestocked')}
+          className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors group"
+        >
+          <div className="flex items-center gap-2">
+            Last Updated
+            {sortConfig.key === 'lastRestocked' ? (
+              sortConfig.direction === 'asc' ? <ArrowUp size={14} className="text-blue-600"/> : <ArrowDown size={14} className="text-blue-600"/>
+            ) : <ArrowUpDown size={14} className="text-slate-300 group-hover:text-slate-500"/>}
+          </div>
+        </th>
+        <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">
+          Quick Actions
+        </th>
+      </tr>
+    </thead>
+  );
+
+  // --- COMPONENT: ROW ITEM ---
+  const InventoryRow = ({ item }) => {
+    const percentage = Math.min((item.current / item.max) * 100, 100);
+    const isLow = item.current <= item.threshold;
+    const barColor = getProgressColor(item.current, item.max, item.threshold);
+
+    return (
+      <tr 
+        onClick={() => handleRowClick(item)}
+        className="hover:bg-blue-50/30 transition-colors cursor-pointer group bg-white"
+      >
+        <td className="px-6 py-4 border-b border-slate-50">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-full ${isLow ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                {isLow ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{item.name}</p>
+              {isLow && <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">Restock Needed</span>}
+            </div>
+          </div>
+        </td>
+        {viewMode !== 'grouped' && (
+          <td className="px-6 py-4 text-sm text-slate-600 border-b border-slate-50">
+            <span className="bg-slate-100 px-2 py-1 rounded text-xs font-medium border border-slate-200">{item.category}</span>
+          </td>
+        )}
+        <td className="px-6 py-4 border-b border-slate-50">
+          <div className="w-full">
+            <div className="flex justify-between mb-1">
+              <span className={`text-xs font-bold ${isLow ? 'text-red-600' : 'text-slate-500'}`}>
+                {percentage.toFixed(0)}%
+              </span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div 
+                className={`h-2.5 rounded-full ${barColor} transition-all duration-500 ease-out`} 
+                style={{ width: `${percentage}%` }}
+              ></div>
+            </div>
+            <div className="flex justify-between mt-1">
+                  <span className="text-[10px] text-slate-400">0 {item.unit}</span>
+                  <span className="text-[10px] text-slate-400">Max: {item.max} {item.unit}</span>
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4 text-sm border-b border-slate-50">
+          <span className={`font-bold text-base ${isLow ? 'text-red-600' : 'text-slate-800'}`}>
+            {item.current}
+          </span>
+          <span className="text-slate-500 ml-1 text-xs">{item.unit}</span>
+        </td>
+        <td className="px-6 py-4 text-sm border-b border-slate-50">
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="text-slate-400" />
+            <span className="text-slate-600">{formatRelativeTime(item.lastRestocked)}</span>
+          </div>
+        </td>
+        <td className="px-6 py-4 text-right border-b border-slate-50">
+            <button 
+              onClick={(e) => openRefillModal(e, item)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-all shadow-sm z-10 relative"
+            >
+              <RefreshCcw size={14} />
+              Refill / Update
+            </button>
+        </td>
+      </tr>
     );
-  }
+  };
+
 
   // --- RENDER: MAIN LIST ---
   return (
@@ -165,9 +374,32 @@ export default function InventoryPage() {
           </div>
         </div>
 
+        {/* LOADING STATE */}
+        {loading && (
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center">
+            <p className="text-slate-500">Loading inventory...</p>
+          </div>
+        )}
+
+        {/* ERROR STATE */}
+        {error && (
+          <div className="bg-red-50 rounded-xl border border-red-200 shadow-sm p-6 text-center">
+            <p className="text-red-600 font-bold">{error}</p>
+            <button 
+              onClick={fetchIngredients}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-bold hover:bg-red-700 transition-all"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* CONTROLS */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <div className="relative w-full md:w-96">
+        {!loading && !error && (
+        <>
+        <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          {/* Search */}
+          <div className="relative w-full xl:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input 
               type="text" 
@@ -178,113 +410,106 @@ export default function InventoryPage() {
             />
           </div>
 
-          <div className="flex gap-3 w-full md:w-auto">
+          <div className="flex flex-wrap gap-3 w-full xl:w-auto items-center">
+            {/* View Mode Toggles */}
+            <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+              <button 
+                onClick={() => setViewMode('flat')}
+                className={`p-2 rounded-md flex items-center gap-2 text-sm font-bold transition-all ${viewMode === 'flat' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                title="List View"
+              >
+                <LayoutList size={18} />
+                <span className="hidden sm:inline">All</span>
+              </button>
+              <button 
+                onClick={() => setViewMode('grouped')}
+                className={`p-2 rounded-md flex items-center gap-2 text-sm font-bold transition-all ${viewMode === 'grouped' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                title="Category View"
+              >
+                <Layers size={18} />
+                <span className="hidden sm:inline">Category</span>
+              </button>
+            </div>
+
+            <div className="h-8 w-[1px] bg-slate-200 mx-1 hidden sm:block"></div>
+
+            {/* Status Filter */}
             <select 
                  value={filterStatus}
                  onChange={(e) => setFilterStatus(e.target.value)}
                  className="pl-4 pr-8 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-slate-100 cursor-pointer"
                >
-                 <option value="All">All Items</option>
+                 <option value="All">All Statuses</option>
                  <option value="Low Stock">Low Stock Only</option>
                  <option value="In Stock">In Stock</option>
             </select>
-            <button className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow-sm transition-all">
+
+            {/* Add Button */}
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow-sm transition-all ml-auto sm:ml-0">
               <Plus size={18} />
               <span className="hidden sm:inline">Add Item</span>
             </button>
           </div>
         </div>
 
-        {/* TABLE */}
+        {/* DATA DISPLAY AREA */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50/80">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Ingredient Name</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-1/3">Stock Level</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Quantity</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Quick Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredItems.map((item) => {
-                const percentage = Math.min((item.current / item.max) * 100, 100);
-                const isLow = item.current <= item.threshold;
-                const barColor = getProgressColor(item.current, item.max, item.threshold);
-
-                return (
-                  <tr 
-                    key={item.id} 
-                    onClick={() => handleRowClick(item)}
-                    className="hover:bg-blue-50/30 transition-colors cursor-pointer group"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${isLow ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                           {isLow ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{item.name}</p>
-                          {isLow && <span className="text-[10px] font-bold text-red-600 uppercase tracking-wide">Restock Needed</span>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">
-                      <span className="bg-slate-100 px-2 py-1 rounded text-xs font-medium border border-slate-200">{item.category}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="w-full">
-                        <div className="flex justify-between mb-1">
-                          <span className={`text-xs font-bold ${isLow ? 'text-red-600' : 'text-slate-500'}`}>
-                            {percentage.toFixed(0)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                          <div 
-                            className={`h-2.5 rounded-full ${barColor} transition-all duration-500 ease-out`} 
-                            style={{ width: `${percentage}%` }}
-                          ></div>
-                        </div>
-                        <div className="flex justify-between mt-1">
-                             <span className="text-[10px] text-slate-400">0 {item.unit}</span>
-                             <span className="text-[10px] text-slate-400">Max: {item.max} {item.unit}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className={`font-bold text-base ${isLow ? 'text-red-600' : 'text-slate-800'}`}>
-                        {item.current}
-                      </span>
-                      <span className="text-slate-500 ml-1 text-xs">{item.unit}</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                       <button 
-                         onClick={(e) => openRefillModal(e, item)}
-                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-all shadow-sm z-10 relative"
-                       >
-                         <RefreshCcw size={14} />
-                         Refill / Update
-                       </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
           
-          {filteredItems.length === 0 && (
-            <div className="p-8 text-center text-slate-500 text-sm">No inventory items found.</div>
+          {/* VIEW: FLAT LIST */}
+          {viewMode === 'flat' && (
+             <table className="min-w-full divide-y divide-slate-200">
+               <TableHeader />
+               <tbody className="divide-y divide-slate-100">
+                 {processedItems.map(item => (
+                   <InventoryRow key={item.id} item={item} />
+                 ))}
+                 {processedItems.length === 0 && (
+                   <tr><td colSpan="6" className="p-8 text-center text-slate-500 text-sm">No inventory items found.</td></tr>
+                 )}
+               </tbody>
+             </table>
           )}
+
+          {/* VIEW: GROUPED BY CATEGORY */}
+          {viewMode === 'grouped' && (
+             <div>
+               {Object.keys(groupedItems).length === 0 ? (
+                  <div className="p-8 text-center text-slate-500 text-sm">No inventory items found.</div>
+               ) : (
+                 Object.entries(groupedItems).map(([category, catItems]) => (
+                   <div key={category} className="border-b border-slate-200 last:border-0">
+                      {/* Group Header */}
+                      <div className="bg-slate-50 px-6 py-3 border-y border-slate-200 flex items-center gap-2">
+                        <Layers size={16} className="text-slate-400" />
+                        <h3 className="font-bold text-slate-700 uppercase tracking-wider text-xs">{category}</h3>
+                        <span className="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold">{catItems.length}</span>
+                      </div>
+                      
+                      {/* Group Table */}
+                      <table className="min-w-full divide-y divide-slate-200">
+                        <TableHeader />
+                        <tbody className="divide-y divide-slate-100">
+                          {catItems.map(item => (
+                            <InventoryRow key={item.id} item={item} />
+                          ))}
+                        </tbody>
+                      </table>
+                   </div>
+                 ))
+               )}
+             </div>
+          )}
+          
         </div>
+        </>
+        )}
       </div>
 
-      {/* --- ENHANCED REFILL MODAL --- */}
+      {/* --- REFILL MODAL (Same as before) --- */}
       {isRefillOpen && selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100">
             
-            {/* Modal Header */}
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
               <h3 className="text-lg font-bold text-slate-800">Update Stock</h3>
               <button 
@@ -295,7 +520,6 @@ export default function InventoryPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
             <form onSubmit={handleRefillSubmit} className="p-6 space-y-5">
               
               <div className="text-center mb-2">
@@ -304,7 +528,6 @@ export default function InventoryPage() {
                  <p className="text-xs font-bold text-slate-400 mt-1">Current: {selectedItem.current} {selectedItem.unit}</p>
               </div>
 
-              {/* Toggle Switch */}
               <div className="bg-slate-100 p-1 rounded-xl flex">
                 <button
                   type="button"
@@ -332,7 +555,6 @@ export default function InventoryPage() {
                 </button>
               </div>
 
-              {/* Input Area */}
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">
                    {updateMode === 'add' ? `Amount to Add (${selectedItem.unit})` : `New Total Count (${selectedItem.unit})`}
@@ -350,11 +572,9 @@ export default function InventoryPage() {
                 />
               </div>
 
-              {/* Calculation Preview */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
                  <span className="text-xs font-bold text-slate-500 uppercase">New Stock Level:</span>
                  <span className={`font-bold text-lg ${
-                    // Logic to check if new value exceeds max
                     (updateMode === 'add' 
                       ? (selectedItem.current + (parseFloat(refillAmount)||0)) 
                       : (parseFloat(refillAmount)||0)) > selectedItem.max 
