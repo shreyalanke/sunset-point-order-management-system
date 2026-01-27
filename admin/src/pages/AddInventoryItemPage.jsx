@@ -303,7 +303,7 @@ export default function AddInventoryItemPage() {
           <div className="flex items-center gap-4">
             <button 
               onClick={() => navigate('/inventory')}
-              className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors"
+              className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors cursor-pointer"
             >
               <ArrowLeft size={20} />
             </button>
@@ -501,14 +501,14 @@ export default function AddInventoryItemPage() {
             <button
               type="button"
               onClick={() => navigate('/inventory')}
-              className="flex-1 py-3 px-6 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-50 transition-all"
+              className="flex-1 py-3 px-6 bg-white border border-slate-200 text-slate-700 rounded-lg font-bold hover:bg-slate-50 transition-all cursor-pointer "
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? (
                 <>
@@ -524,17 +524,7 @@ export default function AddInventoryItemPage() {
             </button>
           </div>
 
-          {/* Helper Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-            <CheckCircle2 className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
-            <div className="text-sm text-blue-800">
-              <p className="font-bold mb-1">Pro Tip</p>
-              <p className="text-blue-700">
-                After adding the ingredient, you can link it to menu items by editing dishes in the Menu section.
-                This enables automatic inventory deduction when orders are served.
-              </p>
-            </div>
-          </div>
+          
         </form>
       </div>
     </div>
