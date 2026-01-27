@@ -290,7 +290,7 @@ function OrdersPage() {
                     ${
                       filterStatus === tab
                         ? "bg-white text-blue-600 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-white/50 cursor-pointer"
                     }
                   `}
                 >
