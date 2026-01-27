@@ -993,6 +993,71 @@ async function updateIngredientDetails(ingredientId, ingredientData) {
   }
 }
 
+async function getAllOrders(searchQuery, startDate, endDate, sortKey, sortDirection, page) {
+  try{
+    let query = `SELECT
+    o.order_id,
+    o.order_tag,
+    o.order_status,
+    o.is_payment_done,
+    o.order_total,
+    o.created_at,
+
+    COALESCE(
+        json_agg(
+            json_build_object(
+                'order_item_id', oi.order_item_id,
+                'dish_id', oi.dish_id,
+                'dish_name', oi.dish_name_snapshot,
+                'price', oi.price_snapshot,
+                'quantity', oi.quantity,
+                'item_status', oi.item_status
+            )
+        ) FILTER (WHERE oi.order_item_id IS NOT NULL),
+        '[]'
+    ) AS items
+
+FROM orders o
+LEFT JOIN order_items oi
+    ON oi.order_id = o.order_id
+
+WHERE
+    (NULLIF($1, '')::TEXT IS NULL OR o.order_tag ILIKE '%' || NULLIF($1, '') || '%')
+    AND (NULLIF($2, '')::TEXT IS NULL OR o.created_at >= $2::DATE)
+    AND (NULLIF($3, '')::TEXT IS NULL OR o.created_at <= $3::DATE)
+
+GROUP BY o.order_id
+
+ORDER BY
+    CASE WHEN $4 = 'created_at' AND $5 = 'ASC'  THEN o.created_at END ASC,
+    CASE WHEN $4 = 'created_at' AND $5 = 'DESC' THEN o.created_at END DESC,
+    CASE WHEN $4 = 'order_total' AND $5 = 'ASC'  THEN o.order_total END ASC,
+    CASE WHEN $4 = 'order_total' AND $5 = 'DESC' THEN o.order_total END DESC
+
+LIMIT 10
+OFFSET ($6 - 1) * 10;
+`;
+
+    endDate = new Date(new Date(endDate).setDate((new Date(endDate)).getDate() + 1)).toISOString().split('T')[0];
+
+    console.log(searchQuery, startDate, endDate, sortKey, sortDirection, page);
+    const values = [
+      searchQuery || '',
+      startDate,
+      endDate,
+      sortKey || 'created_at',
+      sortDirection || 'DESC',
+      page || 1
+    ];
+    console.log('Values:', values);
+    const result = await pool.query(query, values);
+    return result.rows;
+  } catch (error) {
+    console.error("Error fetching all orders:", error);
+    throw error;
+  }
+}
+
 
 
 export default {
@@ -1020,5 +1085,6 @@ export default {
   updateIngredientStock,
   addIngredient,
   getIngredientDetails,
-  updateIngredientDetails
+  updateIngredientDetails,
+  getAllOrders
 };
