@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Sidebar from './components/Sidebar.jsx';
 import Analytics from './pages/Analytics.jsx';
 import Orders from './pages/Orders.jsx';
+import OrderDetailPage from './pages/OrderDetailPage.jsx';
 import Menu from './pages/Menu.jsx';
 import Staff from './pages/Staff.jsx';
 import MenuItemPage from './pages/MenuItemPage.jsx';
@@ -19,6 +20,7 @@ function App() {
             <Route path="/" element={<Navigate to="/analytics" replace />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/orders" element={<Orders />} />
+            <Route path="/orders/:orderId" element={<OrderDetailPage />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/menu/item/:id" element={<MenuItemPage />} /> 
             <Route path="/staff" element={<Staff />} />
