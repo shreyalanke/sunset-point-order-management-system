@@ -293,9 +293,7 @@ export default function MenuItemPage() {
               <h1 className="text-2xl font-bold text-slate-800">
                 {isEditMode ? 'Edit Menu Item' : 'Create New Item'}
               </h1>
-              <p className="text-sm text-slate-500">
-                {isEditMode ? `Editing details for "${itemDetails.name}"` : 'Add a new dish to the menu'}
-              </p>
+          
             </div>
           </div>
           
@@ -392,9 +390,7 @@ export default function MenuItemPage() {
                   <Package size={18} className="text-slate-500" />
                   Recipe Configuration
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Define ingredients used to create this dish.
-                </p>
+                
               </div>
 
               <div className="p-5 flex-grow flex flex-col gap-6">

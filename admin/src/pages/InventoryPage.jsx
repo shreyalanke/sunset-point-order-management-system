@@ -353,7 +353,7 @@ export default function InventoryPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">Inventory Management</h1>
-            <p className="text-sm text-slate-500">Track stock levels and refill ingredients.</p>
+            
           </div>
           
           <div className="flex gap-4">

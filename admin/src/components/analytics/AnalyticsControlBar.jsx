@@ -15,7 +15,7 @@ export default function AnalyticsControlBar({
           <BarChart2 size={24} className="text-blue-600"/>
           Performance Analytics
         </h1>
-        <p className="text-sm text-gray-500">Detailed breakdown of your business metrics</p>
+   
       </div>
 
       <div className="flex items-center gap-3">
