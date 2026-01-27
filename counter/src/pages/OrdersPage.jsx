@@ -218,7 +218,7 @@ function OrdersPage() {
               bg="bg-blue-50"
             />
             <StatCard
-              label="Ready / Closed"
+              label="Closed"
               value={stats.closed}
               icon={CheckCircle2}
               color="text-green-600"
@@ -290,7 +290,7 @@ function OrdersPage() {
                     ${
                       filterStatus === tab
                         ? "bg-white text-blue-600 shadow-sm"
-                        : "text-gray-500 hover:text-gray-700 hover:bg-white/50"
+                        : "text-gray-500 hover:text-gray-700 hover:bg-white/50 cursor-pointer"
                     }
                   `}
                 >
@@ -506,13 +506,13 @@ function OrdersPage() {
                       orderId: null,
                     });
                   }}
-                  className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors"
+                  className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors cursor-pointer"
                 >
                   Back
                 </button>
                 <button
                   onClick={executeDialogAction}
-                  className={`px-4 py-2 text-white rounded-lg font-medium shadow-md transition-colors ${
+                  className={`px-4 py-2 text-white rounded-lg font-medium shadow-md transition-colors cursor-pointer ${
                     confirmDialog.type === "close"
                       ? "bg-green-600 hover:bg-green-700 shadow-green-200"
                       : "bg-red-600 hover:bg-red-700 shadow-red-200"

@@ -285,7 +285,7 @@ export default function MenuItemPage() {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => navigate(-1)}
-              className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors"
+              className="p-2 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer "
             >
               <ArrowLeft size={20} />
             </button>
@@ -293,20 +293,18 @@ export default function MenuItemPage() {
               <h1 className="text-2xl font-bold text-slate-800">
                 {isEditMode ? 'Edit Menu Item' : 'Create New Item'}
               </h1>
-              <p className="text-sm text-slate-500">
-                {isEditMode ? `Editing details for "${itemDetails.name}"` : 'Add a new dish to the menu'}
-              </p>
+          
             </div>
           </div>
           
           <div className="flex gap-3">
-             <button onClick={() => navigate('/menu')} className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50">
+             <button onClick={() => navigate('/menu')} className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
               Cancel
             </button>
             <button 
               onClick={handleSave}
               disabled={loading}
-              className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 shadow-sm disabled:opacity-70"
+              className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 shadow-sm disabled:opacity-70 cursor-pointer"
             >
               <Save size={18} />
               {loading ? 'Saving...' : 'Save Changes'}
@@ -392,9 +390,7 @@ export default function MenuItemPage() {
                   <Package size={18} className="text-slate-500" />
                   Recipe Configuration
                 </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  Define ingredients used to create this dish.
-                </p>
+                
               </div>
 
               <div className="p-5 flex-grow flex flex-col gap-6">
@@ -434,7 +430,9 @@ export default function MenuItemPage() {
                       <button
                         onClick={handleAddIngredient}
                         disabled={!selectedIngId || !quantityInput}
-                        className="w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                        className={` w-full sm:w-auto px-5 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                          (!selectedIngId || !quantityInput) ? 'cursor-not-allowed' : 'cursor-pointer'
+                        }`}
                       >
                         <Plus size={18} />
                         Add
@@ -472,7 +470,7 @@ export default function MenuItemPage() {
                             <td className="px-4 py-3 text-right">
                               <button
                                 onClick={() => handleRemoveIngredient(item.id)}
-                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                               >
                                 <Trash2 size={16} />
                               </button>

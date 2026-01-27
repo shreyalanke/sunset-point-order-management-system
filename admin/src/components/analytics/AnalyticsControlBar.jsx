@@ -15,7 +15,7 @@ export default function AnalyticsControlBar({
           <BarChart2 size={24} className="text-blue-600"/>
           Performance Analytics
         </h1>
-        <p className="text-sm text-gray-500">Detailed breakdown of your business metrics</p>
+   
       </div>
 
       <div className="flex items-center gap-3">
@@ -54,7 +54,7 @@ export default function AnalyticsControlBar({
         
         <button 
           onClick={onApply}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow transition-colors"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow transition-colors cursor-pointer"
         >
           Apply
         </button>

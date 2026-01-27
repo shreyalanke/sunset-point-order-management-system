@@ -203,7 +203,7 @@ function OrderCard({
               <button
                 onClick={handleCancel}
                 disabled={isBusy}
-                className="px-5 py-3 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-xl font-bold transition-all flex items-center justify-center gap-2 flex-1 lg:flex-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-3 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 hover:border-red-300 rounded-xl font-bold transition-all flex items-center justify-center gap-2 flex-1 lg:flex-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed "
                 title="Cancel Order"
               >
                 {isCancelling ? (

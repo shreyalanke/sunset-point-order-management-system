@@ -24,7 +24,7 @@ export default function DishPerformanceTable({
               <button
                 key={tab.id}
                 onClick={() => setDishFilter(tab.id)}
-                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
                   dishFilter === tab.id
                   ? 'bg-white text-blue-600 shadow-sm' 
                   : 'text-gray-500 hover:text-gray-900'
@@ -36,7 +36,7 @@ export default function DishPerformanceTable({
           </div>
           <button 
             onClick={onViewAll}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer"
           >
             View All
           </button>

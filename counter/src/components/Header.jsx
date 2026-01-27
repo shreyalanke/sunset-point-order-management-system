@@ -32,7 +32,7 @@ function Header() {
         
         {/* --- LEFT: Brand Identity --- */}
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-blue-600 rounded-xl shadow-lg shadow-blue-200 flex items-center justify-center shrink-0 transform transition-transform hover:rotate-12">
+          <div className="w-10 h-10 bg-blue-600 rounded-xl shadow-lg shadow-blue-200 flex items-center justify-center shrink-0 transform transition-transform ">
             <ChefHat size={24} className="text-white" />
           </div>
           <div className="hidden sm:block">
@@ -48,23 +48,17 @@ function Header() {
             <span className="text-xs text-gray-500 font-medium">{formattedDate}</span>
           </div>
 
-          <div className="h-8 w-px bg-gray-100 hidden md:block"></div>
+        
 
           {/* Icon Actions */}
-          <div className="flex items-center gap-1 sm:gap-2">
-             <div className="hidden md:flex items-center gap-1 text-xs font-medium text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100 mr-2">
-              <Wifi size={12} />
-              <span>Online</span>
-            </div>
-
-            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors relative">
+          <div className="flex items-center gap-1 sm:gap-2" >
+          
+            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors relative cursor-pointer"  >
               <Bell size={20} />
               <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
             </button>
             
-            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors hidden sm:block">
-              <Settings size={20} />
-            </button>
+            
           </div>
 
         </div>

@@ -188,14 +188,14 @@ export default function Menu() {
                               <div className="flex items-center justify-end gap-2">
                                 <button 
                                   onClick={() => handleEdit(item)}
-                                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                                   title="Edit"
                                 >
                                   <Edit3 size={18} />
                                 </button>
                                 <button 
                                   onClick={() => handleDelete(item.id)}
-                                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                                   title="Delete"
                                 >
                                   <Trash2 size={18} />

@@ -333,7 +333,7 @@ export default function InventoryPage() {
         <td className="px-6 py-4 text-right border-b border-slate-50">
             <button 
               onClick={(e) => openRefillModal(e, item)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-all shadow-sm z-10 relative"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-bold transition-all shadow-sm z-10 relative cursor-pointer"
             >
               <RefreshCcw size={14} />
               Refill / Update
@@ -353,7 +353,7 @@ export default function InventoryPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">Inventory Management</h1>
-            <p className="text-sm text-slate-500">Track stock levels and refill ingredients.</p>
+            
           </div>
           
           <div className="flex gap-4">
@@ -415,7 +415,7 @@ export default function InventoryPage() {
             <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
               <button 
                 onClick={() => setViewMode('flat')}
-                className={`p-2 rounded-md flex items-center gap-2 text-sm font-bold transition-all ${viewMode === 'flat' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`p-2 rounded-md flex items-center gap-2 text-sm font-bold transition-all ${viewMode === 'flat' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700 cursor-pointer'}`}
                 title="List View"
               >
                 <LayoutList size={18} />
@@ -423,7 +423,7 @@ export default function InventoryPage() {
               </button>
               <button 
                 onClick={() => setViewMode('grouped')}
-                className={`p-2 rounded-md flex items-center gap-2 text-sm font-bold transition-all ${viewMode === 'grouped' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`p-2 rounded-md flex items-center gap-2 text-sm font-bold transition-all ${viewMode === 'grouped' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700 cursor-pointer'}`}
                 title="Category View"
               >
                 <Layers size={18} />
@@ -447,7 +447,7 @@ export default function InventoryPage() {
             {/* Add Button */}
             <button 
               onClick={() => navigate('/inventory/add')}
-              className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow-sm transition-all ml-auto sm:ml-0"
+              className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-sm font-bold shadow-sm transition-all ml-auto sm:ml-0 cursor-pointer"
             >
               <Plus size={18} />
               <span className="hidden sm:inline">Add Item</span>

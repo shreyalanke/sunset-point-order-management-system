@@ -12,7 +12,7 @@ const COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"
 
 export default function CategoryPerformanceWidget({ data, onViewAll }) {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+    <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col cursor-pointe">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-bold text-gray-800">Category Performance</h3>
@@ -20,7 +20,7 @@ export default function CategoryPerformanceWidget({ data, onViewAll }) {
         </div>
         <button 
           onClick={onViewAll}
-          className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold"
+          className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg transition-colors flex items-center gap-1 text-xs font-bold cursor-pointer"
         >
           View All <Maximize2 size={14}/>
         </button>
