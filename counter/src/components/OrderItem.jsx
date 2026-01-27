@@ -61,16 +61,7 @@ function OrderItem({
           ₹{(item.price * item.quantity).toFixed(2)}
         </span>
 
-        {/* Delete Button - Shows on Hover */}
-        {!readOnly && (
-          <button
-            onClick={() => onRemove(item.id)}
-            className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all absolute right-2 lg:static cursor-pointer"
-            title="Remove Item"
-          >
-            <X size={16} />
-          </button>
-        )}
+       
       </div>
     </div>
   );
