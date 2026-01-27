@@ -218,7 +218,7 @@ function OrdersPage() {
               bg="bg-blue-50"
             />
             <StatCard
-              label="Ready / Closed"
+              label="Closed"
               value={stats.closed}
               icon={CheckCircle2}
               color="text-green-600"
