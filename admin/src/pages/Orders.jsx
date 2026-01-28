@@ -5,7 +5,7 @@ import {
   Calendar, 
   ChevronRight, 
   ChevronLeft,
-  DollarSign,
+  IndianRupeeIcon,
   ArrowUpDown,
   ArrowUp,
   ArrowDown
@@ -108,13 +108,13 @@ export default function OrdersPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold text-slate-800">Order History</h1>
-            <p className="text-slate-500 text-sm">Review past transactions and order details.</p>
+         
           </div>
           
           <div className="flex gap-3">
              {/* Simple Stats Summary */}
             <div className="bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
-               <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><DollarSign size={18} /></div>
+               <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg"><IndianRupeeIcon size={18} /></div>
                <div>
                  <p className="text-[10px] text-slate-400 font-bold uppercase">Total Revenue</p>
                  <p className="text-lg font-bold text-slate-800">
@@ -142,17 +142,17 @@ export default function OrdersPage() {
           
           {/* Date Range Picker */}
           <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto">
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg cursor-pointer">
               <span className="text-xs font-bold text-slate-500 uppercase">From:</span>
               <input 
                 type="date" 
                 value={dateRange.start}
                 onChange={(e) => handleDateChange('start', e.target.value)}
-                className="bg-transparent text-sm font-medium text-slate-700 outline-none"
+                className="bg-transparent text-sm font-medium text-slate-700 outline-none cursor-pointer"
               />
             </div>
             <div className="hidden sm:block text-slate-300">-</div>
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-2 rounded-lg cursor-pointer">
               <span className="text-xs font-bold text-slate-500 uppercase">To:</span>
               <input 
                 type="date" 
