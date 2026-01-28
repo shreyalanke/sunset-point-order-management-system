@@ -1,16 +1,17 @@
 package com.karan.sunset_point;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
-
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+
+import com.karan.sunset_point.data.AppDatabase;
+import com.karan.sunset_point.data.entity.Dish;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
