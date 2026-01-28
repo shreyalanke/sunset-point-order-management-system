@@ -33,6 +33,11 @@ async function toggleOrderPayment(orderId) {
   return response.data;
 }
 
+async function cancelOrder(orderId) {
+  const response = await apiClient.put(`/orders/cancel?id=${orderId}`);
+  return response.data;
+}
+
 export {
   getOrders,
   createOrder,
@@ -40,4 +45,5 @@ export {
   toggleServedStatus,
   deleteItemFromOrder,
   toggleOrderPayment,
+  cancelOrder,
 };

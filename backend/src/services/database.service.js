@@ -1122,6 +1122,22 @@ OFFSET ($6 - 1) * 10;
   }
 }
 
+async function cancelOrder(orderId) {
+  try{
+    const query = `
+      DELETE FROM orders
+      WHERE order_id = $1
+    `;
+
+    await pool.query(query, [orderId]);
+    return true;
+  }catch (error) {
+    console.error("Error cancelling order:", error);
+    throw error;
+  }
+}
+
+
 
 
 export default {
@@ -1132,6 +1148,7 @@ export default {
   toggleItemServedStatus,
   removeItemFromOrder,
   toggleOrderPaymentStatus,
+  cancelOrder,
   getDashboardStats,
   getTrendData,
   getCategorySalesData,

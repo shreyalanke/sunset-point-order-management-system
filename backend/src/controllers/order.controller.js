@@ -117,6 +117,20 @@ async function toggleOrderPayment(req, res) {
   }
 }
 
+async function cancelOrder(req, res) {
+  let orderId = req.query.id;
+  try {
+    let result = await databaseService.cancelOrder(orderId);
+    if (!result) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    res.status(200)
+  } catch (err) {
+    console.error("Error canceling order:", err);
+    res.status(500).json({ error: "Failed to cancel order" });
+  }
+}
+
 export {
   getOrdersController as getOrders,
   postOrder,
@@ -124,4 +138,5 @@ export {
   orderServed,
   removeItemFromOrder,
   toggleOrderPayment,
+  cancelOrder,
 };
