@@ -29,8 +29,8 @@ async function getOrders() {
       ON o.order_id = oi.order_id
     LEFT JOIN dishes d
       ON oi.dish_id = d.dish_id
-    WHERE o.created_at >= date_trunc('day', now()) + interval '4 hours'
-      AND o.created_at <  date_trunc('day', now()) + interval '1 day' + interval '4 hours'
+    WHERE o.created_at >= date_trunc('day', now() - interval '4 hours') + interval '4 hours'
+      AND o.created_at <  date_trunc('day', now() - interval '4 hours') + interval '1 day' + interval '4 hours'
     ORDER BY o.created_at, oi.order_item_id;
   `;
 

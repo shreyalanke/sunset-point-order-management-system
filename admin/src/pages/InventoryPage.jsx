@@ -517,7 +517,7 @@ export default function InventoryPage() {
               <h3 className="text-lg font-bold text-slate-800">Update Stock</h3>
               <button 
                 onClick={() => setIsRefillOpen(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -538,7 +538,7 @@ export default function InventoryPage() {
                   className={`flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${
                     updateMode === 'add' 
                       ? 'bg-white text-blue-600 shadow-sm' 
-                      : 'text-slate-500 hover:text-slate-700'
+                      : 'text-slate-500 hover:text-slate-700 cursor-pointer'
                   }`}
                 >
                   <TrendingUp size={16} />
@@ -550,7 +550,7 @@ export default function InventoryPage() {
                   className={`flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${
                     updateMode === 'set' 
                       ? 'bg-white text-orange-600 shadow-sm' 
-                      : 'text-slate-500 hover:text-slate-700'
+                      : 'text-slate-500 hover:text-slate-700 cursor-pointer'
                   }`}
                 >
                   <Edit3 size={16} />
@@ -596,13 +596,13 @@ export default function InventoryPage() {
                 <button 
                   type="button"
                   onClick={() => setIsRefillOpen(false)}
-                  className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50"
+                  className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit"
-                  className={`flex-1 py-3 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all ${
+                  className={`flex-1 py-3 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all cursor-pointer ${
                     updateMode === 'add' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'
                   }`}
                 >

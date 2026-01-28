@@ -26,7 +26,6 @@ export default function KPICards({ data }) {
       <StatCard 
         label="Total Revenue" 
         value={`₹${(data.totalRevenue / 100).toFixed(2)}`}
-        subValue="+15%"
         icon={IndianRupeeIcon} 
         bg="bg-green-50" 
         color="text-green-600" 
@@ -34,7 +33,6 @@ export default function KPICards({ data }) {
       <StatCard 
         label="Total Orders" 
         value={`${data.totalOrders}`} 
-        subValue={`Avg ${data.averageOrderPerDay.toFixed(1)}/day`}
         icon={ShoppingBag} 
         bg="bg-blue-50" 
         color="text-blue-600" 
@@ -42,7 +40,6 @@ export default function KPICards({ data }) {
       <StatCard 
         label="Avg Order Value" 
         value={`₹${(data.averageOrderValue / 100).toFixed(2)}`} 
-        subValue="Per Table"
         icon={TrendingUp} 
         bg="bg-purple-50" 
         color="text-purple-600" 
@@ -50,7 +47,6 @@ export default function KPICards({ data }) {
       <StatCard 
         label="Avg Items/Order" 
         value={`${data.avgItemsPerOrder.toFixed(1)}`} 
-        subValue="Items"
         icon={Users} 
         bg="bg-orange-50" 
         color="text-orange-600" 
