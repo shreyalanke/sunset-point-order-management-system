@@ -59,7 +59,7 @@ export default function CategoryModal({ isOpen, onClose, range }) {
             <tr key={idx} className="hover:bg-gray-50 transition-colors">
               <td className="p-3 text-sm font-bold text-gray-800">{cat.name}</td>
               <td className="p-3 text-sm text-gray-600 text-right">{cat.quantity} items</td>
-              <td className="p-3 text-sm font-black text-gray-900 text-right">₹{cat.sales.toLocaleString()}</td>
+              <td className="p-3 text-sm font-black text-gray-900 text-right">₹{(cat.sales / 100).toLocaleString()}</td>
             </tr>
           ))}
         </tbody>

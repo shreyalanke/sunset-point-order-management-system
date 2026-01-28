@@ -16,7 +16,6 @@ function getDateRange(range) {
       start.setHours(0, 0, 0, 0);
 
       end = new Date(start);
-      end.setDate(end.getDate() + 1);
       break;
 
     case 'Last 7 Days':

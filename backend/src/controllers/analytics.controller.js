@@ -10,7 +10,7 @@ async function getAnalytics(req, res) {
             res.status(200).json(result);
         }else{
             let {start, end} = queryParams;
-            let result = await databaseService.getAnalyticsData(new Date(start), new Date(new Date(end).setDate(new Date(end).getDate()+1)));
+            let result = await databaseService.getAnalyticsData(new Date(start), new Date(end));
             res.status(200).json(result);
         }
         console.log("Fetching analytics data with params:", queryParams);

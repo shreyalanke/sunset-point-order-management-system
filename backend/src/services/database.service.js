@@ -432,7 +432,7 @@ async function getAnalyticsData(start, end) {
       WITH days AS (
         SELECT generate_series(
           $1::date,
-          ($2::date - interval '1 day'),
+          ($2::date),
           interval '1 day'
         )::date AS day
       ),
@@ -447,7 +447,7 @@ async function getAnalyticsData(start, end) {
           o.order_status = 'CLOSED'
           AND o.is_payment_done = true
           AND o.created_at >= $1
-          AND o.created_at <  $2
+          AND o.created_at <  ($2::date + interval '1 day')
         GROUP BY o.created_at::date
       )
       SELECT

@@ -62,7 +62,7 @@ export default function CategoryPerformanceWidget({ data, onViewAll }) {
                 <span className="text-sm font-bold text-gray-700 truncate max-w-[100px]">{cat.name}</span>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-gray-900">₹{(cat.sales / 1000).toFixed(1)}k</p>
+                <p className="text-sm font-bold text-gray-900">₹{((cat.sales / 100) / 1000).toFixed(1)}k</p>
               </div>
             </div>
           ))}

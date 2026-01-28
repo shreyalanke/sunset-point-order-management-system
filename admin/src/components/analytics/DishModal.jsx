@@ -123,7 +123,7 @@ export default function DishModal({ isOpen, onClose, dishFilter, range }) {
                         {dish.sales}
                       </td>
                       <td className="p-3 text-sm font-black text-gray-900 text-right">
-                        ₹{dish.revenue.toLocaleString()}
+                        ₹{(dish.revenue / 100).toLocaleString()}
                       </td>
                     </tr>
                   ))

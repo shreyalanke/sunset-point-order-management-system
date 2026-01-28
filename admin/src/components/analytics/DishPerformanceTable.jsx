@@ -62,7 +62,7 @@ export default function DishPerformanceTable({
                   <span className="bg-gray-100 px-2 py-1 rounded">{dish.category}</span>
                 </td>
                 <td className="py-3 text-sm text-gray-600 text-right">{dish.sales}</td>
-                <td className="py-3 text-sm font-bold text-gray-900 text-right">₹{dish.revenue.toLocaleString()}</td>
+                <td className="py-3 text-sm font-bold text-gray-900 text-right">₹{(dish.revenue / 100).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

@@ -407,7 +407,7 @@ function OrdersPage() {
                       <span
                         className={`text-lg font-black ${isSelected && order.status !== "CLOSED" ? "text-white" : "text-gray-900"}`}
                       >
-                        ₹{total}
+                        ₹{(total/100).toFixed(2)}
                       </span>
                     </div>
 

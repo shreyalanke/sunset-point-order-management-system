@@ -25,7 +25,7 @@ export default function KPICards({ data }) {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard 
         label="Total Revenue" 
-        value={`₹${data.totalRevenue.toLocaleString()}`}
+        value={`₹${(data.totalRevenue / 100).toFixed(2)}`}
         subValue="+15%"
         icon={IndianRupeeIcon} 
         bg="bg-green-50" 
@@ -41,7 +41,7 @@ export default function KPICards({ data }) {
       />
       <StatCard 
         label="Avg Order Value" 
-        value={`₹${data.averageOrderValue.toFixed(0)}`} 
+        value={`₹${(data.averageOrderValue / 100).toFixed(2)}`} 
         subValue="Per Table"
         icon={TrendingUp} 
         bg="bg-purple-50" 

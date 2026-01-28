@@ -22,7 +22,8 @@ export default function SalesTrendChart({ data = [] }) {
         day: '2-digit', 
         month: 'short', 
         year: '2-digit' 
-      })
+      }),
+      sales: (item.sales / 100).toFixed(2)
     }));
   }, [data]);
 
