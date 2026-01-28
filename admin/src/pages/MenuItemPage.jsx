@@ -180,7 +180,7 @@ export default function MenuItemPage() {
       let dish = result.dish;
       setItemDetails({
         name: dish.dish_name || '',
-        price: dish.price || '',
+        price: dish.price ? (dish.price / 100).toFixed(2) : '',
         category: dish.category || '',
       });
       let ingredients = result.ingredients || [];
@@ -260,7 +260,7 @@ export default function MenuItemPage() {
     const payload = {
       ...(isEditMode && { id: id }), 
       ...itemDetails,
-      price: parseFloat(itemDetails.price),
+      price: Math.round(parseFloat(itemDetails.price) * 100),
       recipe: ingredientsList.map(ing => ({
         ingredientId: ing.id,
         quantity: parseFloat(ing.quantity)

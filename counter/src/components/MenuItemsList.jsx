@@ -13,7 +13,7 @@ function MenuItemsList({ groupedItems, onSelectItem }) {
               className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 flex justify-between items-center transition-all group cursor-pointer"
             >
               <span className="text-sm text-gray-900 font-semibold group-hover:text-blue-600 transition-colors">{item.name}</span>
-              <span className="text-blue-600 font-bold">₹{item.price.toFixed(2)}</span>
+              <span className="text-blue-600 font-bold">₹{(item.price / 100).toFixed(2)}</span>
             </button>
           ))}
         </div>

@@ -14,7 +14,7 @@ function OrderPopup({
 
   let getOrderTotal = function(order) {
     return order.items
-      .reduce((sum, item) => sum + item.price * item.quantity, 0);
+      .reduce((sum, item) => sum + item.price * item.quantity / 100, 0);
   }
 
   let [filteredMenuItems, setFilteredMenuItems] = useState([]);

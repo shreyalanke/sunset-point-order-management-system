@@ -37,7 +37,7 @@ function OrderItem({
             {item.name}
           </span>
           <span className="text-[10px] font-medium text-gray-400">
-            @ ₹{Number(item.price).toFixed(2)} / unit
+            @ ₹{(Number(item.price) / 100).toFixed(2)} / unit
           </span>
         </div>
       </div>
@@ -58,7 +58,7 @@ function OrderItem({
           font-bold text-sm
           ${isServed ? 'text-gray-400' : 'text-gray-900'}
         `}>
-          ₹{(item.price * item.quantity).toFixed(2)}
+          ₹{(item.price * item.quantity / 100).toFixed(2)}
         </span>
 
        

@@ -154,7 +154,7 @@ function OrderCard({
               </div>
             </div>
             <span className="text-4xl font-black text-gray-900 tracking-tighter">
-              ₹{totalAmount}
+              ₹{(totalAmount / 100).toFixed(2)}
             </span>
           </div>
         </div>

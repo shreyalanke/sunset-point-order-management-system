@@ -113,7 +113,7 @@ let  seedDishes = async () => {
     for (let dish of dishes) {
         let { dish_name, category, price } = dish;
         let query = `INSERT INTO dishes (dish_name, category, price) VALUES ($1, $2, $3)`;
-        await pool.query(query, [dish_name, category, price]);
+        await pool.query(query, [dish_name, category, price*100]);
     }   
     console.log("Seeding completed");
  

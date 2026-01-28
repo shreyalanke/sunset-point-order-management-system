@@ -179,7 +179,7 @@ export default function Menu() {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center text-sm font-bold text-slate-700">
                                 <IndianRupee size={14} className="text-slate-400 mr-1" />
-                                {item.price}
+                                ₹{(item.price / 100).toFixed(2)}
                               </div>
                             </td>
 
