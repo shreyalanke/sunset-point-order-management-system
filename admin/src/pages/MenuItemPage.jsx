@@ -461,7 +461,12 @@ export default function MenuItemPage() {
                         ingredientsList.map((item) => (
                           <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="px-4 py-3 text-sm font-medium text-slate-800">
-                              {item.name}
+                              <button
+                                onClick={() => navigate(`/inventory/${item.id}`)}
+                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors cursor-pointer text-left"
+                              >
+                                {item.name}
+                              </button>
                             </td>
                             <td className="px-4 py-3 text-sm text-slate-600">
                               <span className="font-bold text-slate-800">{item.quantity}</span> 

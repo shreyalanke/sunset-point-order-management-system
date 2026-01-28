@@ -492,7 +492,12 @@ export default function InventoryItemDetailPage() {
               <div className="divide-y divide-slate-100">
                 {item.associatedDishes?.map((dish) => (
                   <div key={dish.id} className="px-6 py-3 flex justify-between items-center hover:bg-slate-50 transition-colors">
-                    <span className="font-bold text-slate-700 text-sm">{dish.name}</span>
+                    <button
+                      onClick={() => navigate(`/menu/item/${dish.id}`)}
+                      className="font-bold text-blue-600 hover:text-blue-800 hover:underline text-sm transition-colors cursor-pointer text-left"
+                    >
+                      {dish.name}
+                    </button>
                     <span className="text-xs text-slate-500">Uses <span className="font-bold text-slate-800">{dish.quantityRequired} {item.unit}</span></span>
                   </div>
                 ))}

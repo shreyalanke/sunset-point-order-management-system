@@ -20,7 +20,8 @@ import {
   CreditCard,
   ChevronRight,
   AlertCircle,
-  Utensils, // Imported Utensils icon
+  Utensils,
+  Hourglass, // Added Hourglass for warning stage
 } from "lucide-react";
 import dayjs from "dayjs";
 
@@ -28,9 +29,12 @@ function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showOrderPopup, setShowOrderPopup] = useState(false);
-  const [filterStatus, setFilterStatus] = useState("active"); // 'all', 'active', 'closed'
+  const [filterStatus, setFilterStatus] = useState("active");
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // --- Timer State ---
+  const [currentTime, setCurrentTime] = useState(dayjs());
 
   const [confirmDialog, setConfirmDialog] = useState({
     show: false,
@@ -42,6 +46,14 @@ function OrdersPage() {
   // --- Data Fetching ---
   useEffect(() => {
     fetchOrders();
+  }, []);
+
+  // --- Update Timer every 30 seconds ---
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(dayjs());
+    }, 30000);
+    return () => clearInterval(timer);
   }, []);
 
   const fetchOrders = async () => {
@@ -81,7 +93,6 @@ function OrdersPage() {
 
   const visibleOrders = useMemo(() => {
     return filteredOrders.sort((a, b) => {
-      // Sort by status (active first) then by ID (newest first)
       if (a.status === "CLOSED" && b.status !== "CLOSED") return 1;
       if (b.status === "CLOSED" && a.status !== "CLOSED") return -1;
       return new Date(b.createdAt) - new Date(a.createdAt);
@@ -316,11 +327,93 @@ function OrdersPage() {
                   0,
                 );
 
-                // Calculate Pending Items
                 const pendingItems = order.items.filter(
                   (item) => item.status !== "SERVED",
                 ).length;
                 const isFullyServed = pendingItems === 0 && itemCount > 0;
+
+                // --- NEW URGENCY LOGIC (Green -> Orange -> Red) ---
+                const isOpen = order.status !== "CLOSED";
+                const createdTime = dayjs(order.createdAt);
+                const diffInMinutes = currentTime.diff(createdTime, "minute");
+                const timeDisplay = `${diffInMinutes}m`;
+
+                // Stages based on 15 minute timer
+                let urgency = "safe"; // Default Green (0-10m)
+                if (isOpen) {
+                  if (diffInMinutes >= 15) urgency = "critical"; // > 15m (Red)
+                  else if (diffInMinutes >= 10) urgency = "warning"; // 10-15m (Orange)
+                }
+
+                // --- DYNAMIC STYLING ---
+                let cardClasses = "";
+                let textMainColor = "";
+                let textSubColor = "";
+                let badgeClass = "";
+                let iconType = Clock;
+
+                if (isSelected) {
+                    if (order.status === "CLOSED") {
+                        // SELECTED + CLOSED (Gray)
+                        cardClasses = "bg-[#F3F4F6] border-green-700 shadow-lg";
+                        textMainColor = "text-gray-900";
+                        textSubColor = "text-gray-500";
+                        badgeClass = "bg-gray-200 text-gray-600";
+                    } else {
+                        // SELECTED + OPEN (Color based on urgency)
+                        textMainColor = "text-white";
+                        if (urgency === "critical") {
+                            // Red (Overdue)
+                            cardClasses = "bg-red-600 border-red-700 shadow-md shadow-red-200 animate-pulse-slow";
+                            textSubColor = "text-red-100";
+                            badgeClass = "bg-white/20 text-white";
+                            iconType = AlertCircle;
+                        } else if (urgency === "warning") {
+                            // Orange (Warning)
+                            cardClasses = "bg-orange-500 border-orange-600 shadow-md shadow-orange-200";
+                            textSubColor = "text-orange-50";
+                            badgeClass = "bg-white/20 text-white";
+                            iconType = Hourglass;
+                        } else {
+                            // Green/Emerald (Safe/Initial)
+                            cardClasses = "bg-emerald-600 border-emerald-600 shadow-md shadow-emerald-200";
+                            textSubColor = "text-emerald-50";
+                            badgeClass = "bg-white/20 text-white";
+                            iconType = Clock;
+                        }
+                    }
+                } else {
+                    // UNSELECTED
+                    if (order.status === "CLOSED") {
+                        cardClasses = "bg-white border-gray-200 hover:border-blue-300";
+                        textMainColor = "text-gray-900";
+                        textSubColor = "text-gray-400";
+                    } else {
+                        // UNSELECTED + OPEN
+                        if (urgency === "critical") {
+                            cardClasses = "bg-red-50 border-red-300 shadow-sm";
+                            textMainColor = "text-red-900";
+                            textSubColor = "text-red-600";
+                            badgeClass = "bg-red-100 text-red-700";
+                            iconType = AlertCircle;
+                        } else if (urgency === "warning") {
+                            cardClasses = "bg-orange-50 border-orange-200 hover:border-orange-300";
+                            textMainColor = "text-gray-900";
+                            textSubColor = "text-orange-600";
+                            badgeClass = "bg-orange-100 text-orange-700";
+                            iconType = Hourglass;
+                        } else {
+                            // Safe (Green tint initially)
+                            cardClasses = "bg-emerald-50/50 border-emerald-200 hover:border-emerald-300";
+                            textMainColor = "text-gray-900";
+                            textSubColor = "text-emerald-700";
+                            badgeClass = "bg-emerald-100 text-emerald-700";
+                            iconType = Clock;
+                        }
+                    }
+                }
+
+                const TimerIcon = iconType;
 
                 return (
                   <div
@@ -330,54 +423,57 @@ function OrdersPage() {
                       setIsSidebarOpen(false);
                     }}
                     className={`
-                      group relative p-4 rounded-xl border cursor-pointer transition-all duration-200
-                      ${
-                        isSelected
-                          ? order.status === "CLOSED"
-                            ? "bg-[#F3F4F6] border-green-700 shadow-lg"
-                            : "bg-blue-600 border-blue-600 shadow-md shadow-blue-200"
-                          : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
-                      }
+                      group relative p-4 rounded-xl border cursor-pointer transition-all duration-300
+                      hover:shadow-md hover:-translate-y-0.5
+                      ${cardClasses}
                     `}
                   >
-                    {/* Top Row: ID and Time */}
+                    {/* Top Row: ID and Timer */}
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
-                        <span
-                          className={`text-sm font-bold ${isSelected && order.status !== "CLOSED" ? "text-white" : "text-gray-900"}`}
-                        >
+                        <span className={`text-sm font-bold ${textMainColor}`}>
                           #{order.tag}
                         </span>
                         {order.status === "CLOSED" && (
                           <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${isSelected && order.status !== "CLOSED" ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"}`}
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${isSelected ? "bg-white/20 text-white" : "bg-gray-100 text-gray-600"}`}
                           >
                             Closed
                           </span>
                         )}
                       </div>
-                      <span
-                        className={`text-xs ${isSelected && order.status !== "CLOSED" ? "text-blue-100" : "text-gray-400"} flex items-center gap-1`}
-                      >
-                        {dayjs(order.createdAt).format("DD MMM YYYY, hh:mm A")}
-                      </span>
+                      
+                      {/* Timer Widget */}
+                      <div className="flex flex-col items-end">
+                        {isOpen ? (
+                            <div className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full transition-colors duration-300 ${badgeClass}`}>
+                                <TimerIcon size={12} />
+                                <span>{timeDisplay}</span>
+                            </div>
+                        ) : (
+                            <span className={`text-xs ${textSubColor} flex items-center gap-1`}>
+                                {dayjs(order.createdAt).format("DD MMM, hh:mm A")}
+                            </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Bottom Row: Details */}
                     <div className="flex justify-between items-end">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span
-                          className={`text-xs ${isSelected && order.status !== "CLOSED" ? "text-blue-100" : "text-gray-500"}`}
-                        >
+                        <span className={`text-xs ${textSubColor}`}>
                           {itemCount} items
                         </span>
 
-                        {/* PENDING ITEMS BADGE - ONLY SHOW IF NOT CLOSED */}
-                        {order.status !== "CLOSED" && pendingItems > 0 && (
+                        {/* PENDING ITEMS BADGE */}
+                        {isOpen && pendingItems > 0 && (
                           <div
                             className={`
-                            flex items-center gap-1 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded animate-pulse
-                            ${isSelected && order.status !== "CLOSED" ? "bg-orange-500 text-white" : "bg-orange-50 text-orange-600 border border-orange-100"}
+                            flex items-center gap-1 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded
+                            ${isSelected 
+                                ? "bg-white/20 text-white" 
+                                : (urgency === 'critical' ? "bg-red-200 text-red-800" : "bg-orange-100 text-orange-700")
+                            }
                           `}
                           >
                             <Utensils size={10} />
@@ -385,10 +481,10 @@ function OrdersPage() {
                           </div>
                         )}
 
-                        {/* ALL SERVED BADGE - OPTIONAL */}
-                        {order.status !== "CLOSED" && isFullyServed && (
+                        {/* ALL SERVED BADGE */}
+                        {isOpen && isFullyServed && (
                           <span
-                            className={`text-[10px] font-bold ${isSelected && order.status !== "CLOSED" ? "text-blue-200" : "text-blue-400"}`}
+                            className={`text-[10px] font-bold ${isSelected ? "text-white/80" : "text-blue-500"}`}
                           >
                             All Served
                           </span>
@@ -397,16 +493,14 @@ function OrdersPage() {
                         {/* Payment Icon Indicator */}
                         {order.paymentDone && (
                           <div
-                            className={`flex items-center gap-1 text-[10px] font-bold uppercase ${isSelected && order.status !== "CLOSED" ? "text-green-300" : "text-green-600 bg-green-50 px-1.5 py-0.5 rounded"}`}
+                            className={`flex items-center gap-1 text-[10px] font-bold uppercase ${isSelected ? "text-green-200" : "text-green-600 bg-green-50 px-1.5 py-0.5 rounded"}`}
                           >
                             <CreditCard size={10} />
                             Paid
                           </div>
                         )}
                       </div>
-                      <span
-                        className={`text-lg font-black ${isSelected && order.status !== "CLOSED" ? "text-white" : "text-gray-900"}`}
-                      >
+                      <span className={`text-lg font-black ${textMainColor}`}>
                         ₹{(total/100).toFixed(2)}
                       </span>
                     </div>
