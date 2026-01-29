@@ -38,6 +38,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.room.runtime)
     annotationProcessor(libs.room.compiler)
+    implementation(libs.escpos.thermalprinter.android)
     implementation(libs.gson)
     implementation(libs.constraintlayout)
     testImplementation(libs.junit)

@@ -1,13 +1,10 @@
 package com.karan.sunset_point;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Toolbar;
 
 import androidx.appcompat.app.AppCompatActivity;
 
