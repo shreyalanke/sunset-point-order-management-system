@@ -6,10 +6,13 @@ import android.os.Bundle;
 import android.util.Log;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.karan.sunset_point.data.AppDatabase;
 import com.karan.sunset_point.data.entity.Dish;
+import com.karan.sunset_point.data.handler.NativeApi;
 
 import java.util.List;
 
@@ -31,10 +34,8 @@ public class MainActivity extends AppCompatActivity {
         settings.setDisplayZoomControls(false);
         settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowUniversalAccessFromFileURLs(true);
-
-
-
-        webView.setWebViewClient(new SunsetPointWebViewClient());
+        webView.addJavascriptInterface(new NativeApi(webView), "NativeApi");
+        webView.setWebViewClient(new WebViewClient());
 
         // Load React build
         webView.loadUrl("file:///android_asset/react/index.html");

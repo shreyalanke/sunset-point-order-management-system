@@ -33,7 +33,7 @@ public class Handler {
         return handler;
     }
 
-    private WebResourceResponse getDishes() {
+    public String getDishes() {
         try {
             List<Dish> dishes = appDatabase.dishDao().getAllDishes();
 
@@ -58,31 +58,11 @@ public class Handler {
                 responseJson.put(entry.getKey(), entry.getValue());
             }
 
-            InputStream stream = new ByteArrayInputStream(
-                    responseJson.toString().getBytes(StandardCharsets.UTF_8)
-            );
-
-            return new WebResourceResponse(
-                    "application/json",
-                    "UTF-8",
-                    stream
-            );
+            return responseJson.toString();
 
         } catch (Exception e) {
             e.printStackTrace();
-            return new WebResourceResponse(
-                    "application/json",
-                    "UTF-8",
-                    new ByteArrayInputStream("{}".getBytes())
-            );
+            return "{\"success\":false,\"error\":\"" + e.getMessage() + "\"}";
         }
-    }
-
-
-    public static WebResourceResponse handleRequest(WebResourceRequest request, String path, String method) {
-        if(path.startsWith("/dishes") && method.equals("GET")){
-            return getInstance().getDishes();
-        }
-        return null;
     }
 }
