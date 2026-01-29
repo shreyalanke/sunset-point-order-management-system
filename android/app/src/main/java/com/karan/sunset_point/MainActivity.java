@@ -9,6 +9,7 @@ import android.webkit.WebViewClient;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.karan.sunset_point.data.handler.NativeApi;
+import com.karan.sunset_point.data.handler.PrinterNativeApi;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -31,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowUniversalAccessFromFileURLs(true);
         webView.addJavascriptInterface(new NativeApi(webView), "NativeApi");
+        webView.addJavascriptInterface(new PrinterNativeApi(webView), "PrinterNativeApi");
         webView.setWebViewClient(new WebViewClient());
 
         // Load React build

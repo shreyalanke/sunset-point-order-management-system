@@ -69,9 +69,36 @@ public interface OrderDao {
     @Query("UPDATE orders SET order_status = 'CLOSED',is_payment_done = 1 WHERE order_id = :orderId")
     void closeOrder(int orderId);
 
-    @Query("UPDATE orders SET is_payment_done = :isPaymentDone")
-    void setIsPayment(boolean isPaymentDone);
+    @Query("UPDATE orders SET is_payment_done = :isPaymentDone WHERE order_id = :orderId")
+    void setIsPayment(boolean isPaymentDone, int orderId);
 
     @Query("DELETE FROM orders WHERE order_id = :orderId")
     void cancelOrder(int orderId);
+
+    @Query("SELECT \n" +
+            "  o.order_id,\n" +
+            "  o.order_tag,\n" +
+            "  o.created_at,\n" +
+            "  o.order_status,\n" +
+            "  o.is_payment_done,\n" +
+            "  o.order_total,\n" +
+            "\n" +
+            "  oi.order_item_id,\n" +
+            "  oi.quantity,\n" +
+            "  oi.item_status,\n" +
+            "  oi.price_snapshot AS price,\n" +
+            "  oi.dish_name_snapshot AS dish_name,\n" +
+            "\n" +
+            "  d.dish_id,\n" +
+            "  d.category\n" +
+            "\n" +
+            "FROM orders o\n" +
+            "LEFT JOIN order_items oi\n" +
+            "  ON o.order_id = oi.order_id\n" +
+            "LEFT JOIN dishes d\n" +
+            "  ON oi.dish_id = d.dish_id\n" +
+            "\n" +
+            "WHERE o.order_id = :orderId")
+    List<OrderWithItemsRow> getOrderForPrint(int orderId);
+
 }

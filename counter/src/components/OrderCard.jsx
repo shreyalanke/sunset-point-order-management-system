@@ -11,6 +11,7 @@ import {
 import OrderItemsList from "./OrderItemsList";
 import dayjs from "dayjs";
 import { useState } from "react";
+import { printOrder } from "../API/printer";
 
 function OrderCard({
   order,
@@ -36,6 +37,10 @@ function OrderCard({
   const isBusy = isCompleting || isCancelling || isPaymentLoading;
 
   // --- Handlers ---
+
+  const handleOrderPrint = async () => {
+    printOrder(order.id);
+  };
 
   const handleCancel = async () => {
     setIsCancelling(true);
@@ -89,6 +94,7 @@ function OrderCard({
         <button
           className="p-2.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
           title="Print Receipt"
+          onClick={handleOrderPrint}
           disabled={isBusy}
         >
           <Printer size={20} />

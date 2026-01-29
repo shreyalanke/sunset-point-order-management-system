@@ -102,12 +102,6 @@ public class Handler {
             List<OrderWithItemsRow> rows =
                     appDatabase.orderDao().getTodayOrders();
 
-            List<Order> orders = appDatabase.orderDao().getAllOrders();
-
-            for (Order o : orders){
-                Log.d("tag",o.created_at+"");
-            }
-
             Map<Integer, OrderResponse> orderMap = new LinkedHashMap<>();
 
             for (OrderWithItemsRow row : rows) {
@@ -148,7 +142,6 @@ public class Handler {
 
         } catch (Exception e) {
             e.printStackTrace();
-            Log.d("aasdd","asdkjashdasjhd");
             return "[]";
         }
     }
@@ -193,7 +186,7 @@ public class Handler {
         try {
             Order order = appDatabase.orderDao().getOrderById(orderId);
             order.is_payment_done = !order.is_payment_done;
-            appDatabase.orderDao().setIsPayment(order.is_payment_done);
+            appDatabase.orderDao().setIsPayment(order.is_payment_done,orderId);
             return order.is_payment_done;
         }catch (Exception e){
             e.printStackTrace();
@@ -206,6 +199,52 @@ public class Handler {
             appDatabase.orderDao().cancelOrder(orderId);
         } catch (Exception e){
             e.printStackTrace();
+        }
+    }
+
+    public OrderResponse getOrderForPrint(int orderId) {
+        try {
+            List<OrderWithItemsRow> rows = appDatabase.orderDao().getOrderForPrint(orderId);
+
+            Map<Integer, OrderResponse> orderMap = new LinkedHashMap<>();
+            for(OrderWithItemsRow row : rows){
+
+                // Create order if not exists
+                OrderResponse order = orderMap.get(row.order_id);
+
+                if (order == null) {
+                    order = new OrderResponse();
+                    order.id = row.order_id;
+                    order.tag = row.order_tag;
+                    order.createdAt = row.created_at;
+                    order.status = row.order_status;
+                    order.paymentDone = row.is_payment_done;
+                    order.orderTotal = row.order_total;
+
+                    orderMap.put(row.order_id, order);
+                }
+
+                // Add item if exists (LEFT JOIN safety)
+                if (row.order_item_id != null) {
+                    OrderItemResponse item = new OrderItemResponse();
+                    item.id = row.order_item_id;
+                    item.quantity = row.quantity;
+                    item.status = row.item_status;
+                    item.name = row.dish_name;
+                    item.category = row.category;
+                    item.price = row.price;
+
+                    order.items.add(item);
+                }
+            }
+
+            List<OrderResponse> result = new ArrayList<>(orderMap.values());
+
+
+            return result.get(0);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }
