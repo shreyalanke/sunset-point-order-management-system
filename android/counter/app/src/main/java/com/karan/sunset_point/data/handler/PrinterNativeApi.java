@@ -52,7 +52,7 @@ public class PrinterNativeApi {
                         JSONObject.quote(requestId) +
                         ");";
                 webView.post(()->webView.evaluateJavascript(js,null));
-                throw new RuntimeException(e);
+                e.printStackTrace();
             }
         });
     }
