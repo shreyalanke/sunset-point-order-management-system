@@ -19,7 +19,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AdminSunsetPoint">
         <provider
-            android:name=".OrderContentProvider"
+            android:name=".MyContentProvider"
             android:authorities="com.karan.sunset_point.provider"
             android:exported="true" />
 

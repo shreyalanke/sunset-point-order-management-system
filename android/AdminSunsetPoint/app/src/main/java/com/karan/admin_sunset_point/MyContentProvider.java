@@ -21,7 +21,7 @@ import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class OrderContentProvider extends ContentProvider {
+public class MyContentProvider extends ContentProvider {
 
     // TAG for filtering in Logcat
     private static final String TAG = "OrderProvider";
@@ -50,7 +50,7 @@ public class OrderContentProvider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
-        Log.d(TAG, "onCreate: Initializing OrderContentProvider...");
+        Log.d(TAG, "onCreate: Initializing MyContentProvider...");
         try {
             db = AppDatabase.getInstance(getContext());
             Log.d(TAG, "onCreate: Database instance obtained.");
