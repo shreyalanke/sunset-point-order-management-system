@@ -1,6 +1,17 @@
 import apiClient from "./index.js";
 
-export async function getAnalytics(range) {
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+let getAnalytics;
+
+
+async function getAnalytics_w(range) {
     try {
         let response;
         if (range instanceof Object) {
@@ -15,7 +26,30 @@ export async function getAnalytics(range) {
     }
 }
 
-export async function getDishPerformance(range,type,limit=5) {
+async function getAnalytics_a(range) {
+    let result = await (new Promise((resolve) => {
+        const id = crypto?.randomUUID ? crypto.randomUUID() : uuid();
+        window.__nativePromises[id] = resolve;
+
+        if (range instanceof Object) {
+            window.NativeApi.getAnalyticsByDateRange(
+                id,
+                range.start,
+                range.end
+            );
+        } else {
+            window.NativeApi.getAnalyticsByPredefinedRange(
+                id,
+                range
+            );
+        }
+    }));
+  return result;
+}
+
+let getDishPerformance;
+
+async function getDishPerformance_w(range,type,limit=5) {
     try {
         let response;
         if (range instanceof Object) {
@@ -30,8 +64,33 @@ export async function getDishPerformance(range,type,limit=5) {
         throw error;
     }
 }
+async function getDishPerformance_a(range,type,limit=5) {
+    let result = await (new Promise((resolve) => {
+        const id = crypto?.randomUUID ? crypto.randomUUID() : uuid();
+        window.__nativePromises[id] = resolve;
+        if (range instanceof Object) {
+            window.NativeApi.getDishPerformanceByDateRange(
+                id,
+                range.start,
+                range.end,
+                type,
+                limit
+            );
+        } else {
+            window.NativeApi.getDishPerformanceByPredefinedRange(
+                id,
+                range,
+                type,
+                limit
+            );
+        }
+    }));
+  return result;
+}
 
-export async function getCategoryPerformance(range) {
+let getCategoryPerformance;
+
+async function getCategoryPerformance_w(range) {
     try {
         let response;
         if (range instanceof Object) {
@@ -47,53 +106,34 @@ export async function getCategoryPerformance(range) {
     }
 }
 
-export async function getTotalRevenue() {
-    try {
-        const response = await apiClient.get('/admin/dashboard/summary');
-        return response.data.totalRevenue;
-    } catch (error) {
-        console.error("Error fetching total revenue:", error);
-        throw error;
-    }
+async function getCategoryPerformance_a(range) {
+    let result = await (new Promise((resolve) => {
+        const id = crypto?.randomUUID ? crypto.randomUUID() : uuid();
+        window.__nativePromises[id] = resolve;
+        if (range instanceof Object) {
+            window.NativeApi.getCategoryPerformanceByDateRange(
+                id,
+                range.start,
+                range.end
+            );
+        } else {
+            window.NativeApi.getCategoryPerformanceByPredefinedRange(
+                id,
+                range
+            );
+        }
+    }));
+  return result;
 }
 
-
-export async function getTrendData(range) {
-    try {
-        const response = await apiClient.get(`/admin/dashboard/order-trends?range=${range}`);
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching order trends data:", error);
-        throw error;
-    }
+if (window.NativeApi) {
+    getAnalytics = getAnalytics_a;
+    getDishPerformance = getDishPerformance_a;
+    getCategoryPerformance = getCategoryPerformance_a;
+} else {
+    getAnalytics = getAnalytics_w;
+    getDishPerformance = getDishPerformance_w;
+    getCategoryPerformance = getCategoryPerformance_w;
 }
 
-export async function getCategorySalesData() {
-    try {
-        const response = await apiClient.get('/admin/dashboard/category-sales');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching category sales data:", error);
-        throw error;
-    }
-}
-
-export async function getTopSellingItems() {
-    try {
-        const response = await apiClient.get('/admin/dashboard/top-selling-items');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching top selling items:", error);
-        throw error;
-    }   
-}
-
-export async function getHighValueItems() {
-    try {
-        const response = await apiClient.get('/admin/dashboard/high-value-items');
-        return response.data;
-    } catch (error) {
-        console.error("Error fetching high value items:", error);
-        throw error;
-    }
-}
+export { getAnalytics , getDishPerformance , getCategoryPerformance };

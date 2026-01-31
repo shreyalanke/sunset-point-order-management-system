@@ -1,5 +1,6 @@
 package com.karan.admin_sunset_point;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -10,6 +11,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.karan.admin_sunset_point.data.handler.NativeApi;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setDisplayZoomControls(false);
         settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowUniversalAccessFromFileURLs(true);
-//        webView.addJavascriptInterface(new NativeApi(webView), "NativeApi");
+        webView.addJavascriptInterface(new NativeApi(webView), "NativeApi");
 //        webView.addJavascriptInterface(new PrinterNativeApi(webView), "PrinterNativeApi");
         webView.setWebViewClient(new WebViewClient());
 

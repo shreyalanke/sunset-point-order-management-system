@@ -406,140 +406,148 @@ async function getAnalyticsData(start, end) {
   try {
     /** ---------- SUMMARY QUERY ---------- */
     const summaryQuery = `
-      SELECT
-          COALESCE(SUM(o.order_total), 0)          AS total_revenue,
-          COUNT(o.order_id)                        AS total_orders,
-          AVG(o.order_total)                       AS avg_order_value,
-          AVG(COALESCE(oi.item_count, 0))          AS avg_number_of_items_per_order
-      FROM orders o
-      LEFT JOIN (
-          SELECT
-              order_id,
-              SUM(quantity) AS item_count
-          FROM order_items
-          WHERE item_status != 'CANCELLED'
-          GROUP BY order_id
-      ) oi ON oi.order_id = o.order_id
-      WHERE
-          o.order_status = 'CLOSED'
-          AND o.is_payment_done = true
-          AND o.created_at >= $1
-          AND o.created_at <  $2;
+SELECT
+    COALESCE(SUM(o.order_total), 0)          AS total_revenue,
+    COUNT(o.order_id)                        AS total_orders,
+    AVG(o.order_total)                       AS avg_order_value,
+    AVG(COALESCE(oi.item_count, 0))          AS avg_number_of_items_per_order
+FROM orders o
+LEFT JOIN (
+    SELECT
+        order_id,
+        SUM(quantity) AS item_count
+    FROM order_items
+    WHERE item_status != 'CANCELLED'
+    GROUP BY order_id
+) oi ON oi.order_id = o.order_id
+WHERE
+    o.order_status = 'CLOSED'
+    AND o.is_payment_done = true
+    AND o.created_at >= $1::date
+    AND o.created_at <  ($2::date + INTERVAL '1 day');
     `;
 
     /** ---------- SALES TREND (ZERO-FILLED DAYS, REAL DATES) ---------- */
     const trendQuery = `
-      WITH days AS (
-        SELECT generate_series(
-          $1::date,
-          ($2::date),
-          interval '1 day'
-        )::date AS day
-      ),
-      aggregated AS (
-        SELECT
-          o.created_at::date AS day,
-          SUM(o.order_total) AS sales,
-          COUNT(o.order_id)  AS orders,
-          ROUND(AVG(o.order_total)) AS aov
-        FROM orders o
-        WHERE
-          o.order_status = 'CLOSED'
-          AND o.is_payment_done = true
-          AND o.created_at >= $1
-          AND o.created_at <  ($2::date + interval '1 day')
-        GROUP BY o.created_at::date
-      )
-      SELECT
-        d.day AS date,
-        COALESCE(a.sales, 0) AS sales,
-        COALESCE(a.orders, 0) AS orders,
-        COALESCE(a.aov, 0) AS aov
-      FROM days d
-      LEFT JOIN aggregated a USING (day)
-      ORDER BY d.day;
+WITH days AS (
+  SELECT generate_series(
+    $1::date,
+    $2::date,
+    INTERVAL '1 day'
+  )::date AS day
+),
+aggregated AS (
+  SELECT
+    o.created_at::date AS day,
+    SUM(o.order_total) AS sales,
+    COUNT(o.order_id)  AS orders,
+    ROUND(AVG(o.order_total)) AS aov
+  FROM orders o
+  WHERE
+    o.order_status = 'CLOSED'
+    AND o.is_payment_done = true
+    AND o.created_at >= $1::date
+    AND o.created_at <  ($2::date + INTERVAL '1 day')
+  GROUP BY o.created_at::date
+)
+SELECT
+  d.day AS date,
+  COALESCE(a.sales, 0)  AS sales,
+  COALESCE(a.orders, 0) AS orders,
+  COALESCE(a.aov, 0)    AS aov
+FROM days d
+LEFT JOIN aggregated a USING (day)
+ORDER BY d.day;
+
     `;
 
     /** ---------- HOURLY RUSH (ALL 24 HOURS) ---------- */
     const hourlyRushQuery = `
-      WITH hours AS (
-        SELECT generate_series(0, 23) AS hour
-      ),
-      hourly_orders AS (
-        SELECT
-          EXTRACT(HOUR FROM o.created_at)::int AS hour,
-          COUNT(o.order_id) AS orders
-        FROM orders o
-        WHERE
-          o.order_status = 'CLOSED'
-          AND o.is_payment_done = true
-          AND o.created_at >= $1
-          AND o.created_at <  $2
-        GROUP BY EXTRACT(HOUR FROM o.created_at)
-      )
-      SELECT
-        h.hour,
-        COALESCE(ROUND(AVG(o.orders)), 0) AS avg_orders
-      FROM hours h
-      LEFT JOIN hourly_orders o USING (hour)
-      GROUP BY h.hour
-      ORDER BY h.hour;
+WITH hours AS (
+  SELECT generate_series(0, 23) AS hour
+),
+hourly_orders AS (
+  SELECT
+    EXTRACT(HOUR FROM o.created_at)::int AS hour,
+    COUNT(o.order_id) AS orders
+  FROM orders o
+  WHERE
+    o.order_status = 'CLOSED'
+    AND o.is_payment_done = true
+    AND o.created_at >= $1::date
+    AND o.created_at <  ($2::date + INTERVAL '1 day')
+  GROUP BY EXTRACT(HOUR FROM o.created_at)
+)
+SELECT
+  h.hour,
+  COALESCE(ROUND(AVG(o.orders)), 0) AS avg_orders
+FROM hours h
+LEFT JOIN hourly_orders o USING (hour)
+GROUP BY h.hour
+ORDER BY h.hour;
+
     `;
 
     /** ---------- CATEGORY PERFORMANCE ---------- */
     const categoryPerformanceQuery = `
-      SELECT
-          d.category AS name,
-          SUM(oi.quantity * oi.price_snapshot) AS sales,
-          SUM(oi.quantity) AS quantity
-      FROM order_items oi
-      JOIN orders o ON o.order_id = oi.order_id
-      JOIN dishes d ON d.dish_id = oi.dish_id
-      WHERE
-          o.order_status = 'CLOSED'
-          AND o.is_payment_done = true
-          AND oi.item_status != 'CANCELLED'
-          AND o.created_at >= $1
-          AND o.created_at <  $2
-      GROUP BY d.category
-      ORDER BY sales DESC
-      LIMIT 4;
+SELECT
+    d.category AS name,
+    SUM(oi.quantity * oi.price_snapshot) AS sales,
+    SUM(oi.quantity) AS quantity
+FROM order_items oi
+JOIN orders o ON o.order_id = oi.order_id
+JOIN dishes d ON d.dish_id = oi.dish_id
+WHERE
+    o.order_status = 'CLOSED'
+    AND o.is_payment_done = true
+    AND o.created_at >= $1::date
+    AND o.created_at <  ($2::date + INTERVAL '1 day')
+GROUP BY d.category
+ORDER BY sales DESC
+LIMIT 4;
+
     `;
 
     /** ---------- ORDER SIZE ---------- */
     const orderSizeQuery = `
-      WITH order_item_counts AS (
-        SELECT
-            o.order_id,
-            SUM(oi.quantity) AS item_count
-        FROM orders o
-        JOIN order_items oi ON oi.order_id = o.order_id
-        WHERE
-            o.order_status = 'CLOSED'
-            AND o.is_payment_done = true
-            AND oi.item_status != 'CANCELLED'
-            AND o.created_at >= $1
-            AND o.created_at <  $2
-        GROUP BY o.order_id
-      )
-      SELECT
-        CASE
-          WHEN item_count = 1 THEN '1 Item'
-          WHEN item_count = 2 THEN '2 Items'
-          WHEN item_count BETWEEN 3 AND 4 THEN '3-4 Items'
-          ELSE '5+ Items'
-        END AS size,
-        COUNT(*) AS count
-      FROM order_item_counts
-      GROUP BY item_count
-      ORDER BY
-        CASE
-          WHEN item_count = 1 THEN 1
-          WHEN item_count = 2 THEN 2
-          WHEN item_count BETWEEN 3 AND 4 THEN 3
-          ELSE 4
-        END;
-    `;
+    WITH order_item_counts AS (
+  SELECT
+      o.order_id,
+      SUM(oi.quantity) AS item_count
+  FROM orders o
+  JOIN order_items oi ON oi.order_id = o.order_id
+  WHERE
+      o.order_status = 'CLOSED'
+      AND o.is_payment_done = true
+      AND oi.item_status != 'CANCELLED'
+      AND o.created_at >= $1::date
+      AND o.created_at <  ($2::date + INTERVAL '1 day')
+  GROUP BY o.order_id
+),
+bucketed AS (
+  SELECT
+    CASE
+      WHEN item_count = 1 THEN '1 Item'
+      WHEN item_count = 2 THEN '2 Items'
+      WHEN item_count BETWEEN 3 AND 4 THEN '3-4 Items'
+      ELSE '5+ Items'
+    END AS size
+  FROM order_item_counts
+)
+SELECT
+  size,
+  COUNT(*) AS count
+FROM bucketed
+GROUP BY size
+ORDER BY
+  CASE
+    WHEN size = '1 Item' THEN 1
+    WHEN size = '2 Items' THEN 2
+    WHEN size = '3-4 Items' THEN 3
+    ELSE 4
+  END;
+
+`;
 
     const [
       summaryRes,
