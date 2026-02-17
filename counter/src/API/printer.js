@@ -25,7 +25,7 @@ async function printOrder_a(orderId, printType = 'KOT') {
         window.PrinterNativeApi.printOrder(
             id,
             orderId,
-            printType
+            printType 
         );
     }));
 }

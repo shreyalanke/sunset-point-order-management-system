@@ -108,7 +108,7 @@ public class PrinterNativeApi {
             }
         });
     }
-
+ 
     @JavascriptInterface
     public void connectPrinter(String requestId){
         executor.execute(() -> {
