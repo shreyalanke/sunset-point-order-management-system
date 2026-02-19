@@ -39,6 +39,7 @@ function OrdersPage() {
     const saved = localStorage.getItem('autoPayEnabled');
     return saved !== null ? JSON.parse(saved) : true;
   });
+  const [activeCategoryInPopup, setActiveCategoryInPopup] = useState(null);
 
   // --- Timer State ---
   const [currentTime, setCurrentTime] = useState(dayjs());
@@ -71,13 +72,19 @@ function OrdersPage() {
   // --- Back Button Handler ---
   useEffect(() => {
     const handleBackPress = () => {
-      // Priority 1: Close create order popup if open
+      // Priority 1: Unselect category in popup if one is selected
+      if (showOrderPopup && activeCategoryInPopup !== null) {
+        setActiveCategoryInPopup(null);
+        return true; // Handled
+      }
+      
+      // Priority 2: Close create order popup if open
       if (showOrderPopup) {
         setShowOrderPopup(false);
         return true; // Handled
       }
       
-      // Priority 2: Close order card if open
+      // Priority 3: Close order card if open
       if (selectedOrderId !== null) {
         setSelectedOrderId(null);
         return true; // Handled
@@ -92,7 +99,7 @@ function OrdersPage() {
     return () => {
       setBackPressHandler(null);
     };
-  }, [showOrderPopup, selectedOrderId]);
+  }, [showOrderPopup, selectedOrderId, activeCategoryInPopup]);
 
   const fetchOrders = async () => {
     const fetchedOrders = await getOrders();
@@ -148,6 +155,7 @@ function OrdersPage() {
     const fetchedOrders = await getOrders();
     setOrders(fetchedOrders);
     setShowOrderPopup(false);
+    setActiveCategoryInPopup(null);
     
     // Select the most recently created order (highest ID)
     if (fetchedOrders.length > 0) {
@@ -698,7 +706,12 @@ function OrdersPage() {
           searchQuery={searchQuery}
           onSearchChange={(e) => setSearchQuery(e.target.value)}
           onConfirm={handleConfirmOrderCreation}
-          onCancel={() => setShowOrderPopup(false)}
+          onCancel={() => {
+            setShowOrderPopup(false);
+            setActiveCategoryInPopup(null);
+          }}
+          activeCategory={activeCategoryInPopup}
+          onCategoryChange={setActiveCategoryInPopup}
         />
       )}
     </div>
