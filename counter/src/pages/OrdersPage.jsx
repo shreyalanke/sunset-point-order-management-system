@@ -140,10 +140,10 @@ function OrdersPage() {
     // Sort orders based on filter status
     const sorted = [...filteredOrders];
     
-    if (filterStatus === "closed" || filterStatus === "all") {
-      // For closed and all: oldest on top (ascending by ID)
-      sorted.sort((a, b) => a.id - b.id);
-    }
+    // if (filterStatus === "closed" || filterStatus === "all") {
+    //   // For closed and all: oldest on top (ascending by ID)
+    //   sorted.sort((a, b) => a.id - b.id);
+    // }
     
     return sorted;
   }, [filteredOrders, filterStatus]);
