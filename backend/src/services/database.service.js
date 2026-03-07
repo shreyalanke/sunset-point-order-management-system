@@ -31,6 +31,7 @@ async function getOrders() {
       ON oi.dish_id = d.dish_id
     WHERE o.created_at >= date_trunc('day', now() - interval '4 hours') + interval '4 hours'
       AND o.created_at <  date_trunc('day', now() - interval '4 hours') + interval '1 day' + interval '4 hours'
+      AND o.order_status != 'CANCELLED'
     ORDER BY o.created_at, oi.order_item_id;
   `;
 
@@ -217,6 +218,7 @@ async function getTrendData(range) {
         FROM orders
         WHERE created_at >= date_trunc('day', CURRENT_TIMESTAMP)
           AND created_at < date_trunc('day', CURRENT_TIMESTAMP) + interval '1 day'
+          AND order_status != 'CANCELLED'
         GROUP BY 1
       )
       SELECT
@@ -245,6 +247,7 @@ async function getTrendData(range) {
         FROM orders
         WHERE created_at >= CURRENT_DATE - interval '6 days'
           AND created_at < CURRENT_DATE + interval '1 day'
+          AND order_status != 'CANCELLED'
         GROUP BY 1
       )
       SELECT
@@ -273,6 +276,7 @@ async function getTrendData(range) {
         FROM orders
         WHERE created_at >= date_trunc('month', CURRENT_DATE)
           AND created_at < date_trunc('month', CURRENT_DATE) + interval '1 month'
+          AND order_status != 'CANCELLED'
         GROUP BY 1
       )
       SELECT
@@ -347,6 +351,7 @@ JOIN orders o ON o.order_id = oi.order_id
 WHERE
     oi.item_status = 'SERVED'
     AND DATE(o.created_at) = CURRENT_DATE
+    AND o.order_status != 'CANCELLED'
 GROUP BY oi.dish_name_snapshot
 ORDER BY sales DESC
 LIMIT 5;
@@ -1133,7 +1138,8 @@ OFFSET ($6 - 1) * 10;
 async function cancelOrder(orderId) {
   try{
     const query = `
-      DELETE FROM orders
+      UPDATE orders
+      SET order_status = 'CANCELLED'
       WHERE order_id = $1
     `;
 
