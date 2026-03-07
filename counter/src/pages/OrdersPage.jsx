@@ -23,15 +23,22 @@ import {
   ChevronRight,
   AlertCircle,
   Utensils,
-  Hourglass, // Added Hourglass for warning stage
+  Hourglass,
+  FileText,
+  Trash2,
+  Edit3,
+  X // Added X for the modal close button
 } from "lucide-react";
 import dayjs from "dayjs";
 import { printOrder } from "../API/printer.js";
+import { useDrafts } from "../hooks/useDrafts";
+
 
 function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showOrderPopup, setShowOrderPopup] = useState(false);
+  const [showDraftsModal, setShowDraftsModal] = useState(false); // New state for drafts modal
   const [filterStatus, setFilterStatus] = useState("active");
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -40,6 +47,11 @@ function OrdersPage() {
     return saved !== null ? JSON.parse(saved) : true;
   });
   const [activeCategoryInPopup, setActiveCategoryInPopup] = useState(null);
+  
+  // Draft management
+  const { drafts, addDraft, updateDraft, deleteDraft, getDraft } = useDrafts();
+  const [editingDraftId, setEditingDraftId] = useState(null);
+  const [draftToResume, setDraftToResume] = useState(null);
 
   // --- Timer State ---
   const [currentTime, setCurrentTime] = useState(dayjs());
@@ -55,6 +67,13 @@ function OrdersPage() {
   useEffect(() => {
     localStorage.setItem('autoPayEnabled', JSON.stringify(autoPayEnabled));
   }, [autoPayEnabled]);
+
+  // --- Auto-close drafts modal if empty ---
+  useEffect(() => {
+    if (drafts.length === 0 && showDraftsModal) {
+      setShowDraftsModal(false);
+    }
+  }, [drafts, showDraftsModal]);
 
   // --- Data Fetching ---
   useEffect(() => {
@@ -72,25 +91,30 @@ function OrdersPage() {
   // --- Back Button Handler ---
   useEffect(() => {
     const handleBackPress = () => {
-      // Priority 1: Unselect category in popup if one is selected
+      // Priority 1: Close drafts modal
+      if (showDraftsModal) {
+        setShowDraftsModal(false);
+        return true;
+      }
+      
+      // Priority 2: Unselect category in popup if one is selected
       if (showOrderPopup && activeCategoryInPopup !== null) {
         setActiveCategoryInPopup(null);
         return true; // Handled
       }
       
-      // Priority 2: Close create order popup if open
+      // Priority 3: Close create order popup if open
       if (showOrderPopup) {
         setShowOrderPopup(false);
         return true; // Handled
       }
       
-      // Priority 3: Close order card if open
+      // Priority 4: Close order card if open
       if (selectedOrderId !== null) {
         setSelectedOrderId(null);
         return true; // Handled
       }
       
-      // Nothing to close, let Android handle it (show toast and exit logic)
       return false;
     };
     
@@ -99,7 +123,7 @@ function OrdersPage() {
     return () => {
       setBackPressHandler(null);
     };
-  }, [showOrderPopup, selectedOrderId, activeCategoryInPopup]);
+  }, [showOrderPopup, selectedOrderId, activeCategoryInPopup, showDraftsModal]);
 
   const fetchOrders = async () => {
     const fetchedOrders = await getOrders();
@@ -119,8 +143,9 @@ function OrdersPage() {
       .reduce((sum, order) => {
         return sum + parseFloat(getOrderTotal(order));
       }, 0);
-    return { active, closed, revenue };
-  }, [orders]);
+    const draftCount = drafts.length;
+    return { active, closed, revenue, draftCount };
+  }, [orders, drafts]);
 
   // --- Filtering Logic ---
   const filteredOrders = orders.filter((order) => {
@@ -137,14 +162,7 @@ function OrdersPage() {
   });
 
   const visibleOrders = useMemo(() => {
-    // Sort orders based on filter status
     const sorted = [...filteredOrders];
-    
-    // if (filterStatus === "closed" || filterStatus === "all") {
-    //   // For closed and all: oldest on top (ascending by ID)
-    //   sorted.sort((a, b) => a.id - b.id);
-    // }
-    
     return sorted;
   }, [filteredOrders, filterStatus]);
 
@@ -156,8 +174,9 @@ function OrdersPage() {
     setOrders(fetchedOrders);
     setShowOrderPopup(false);
     setActiveCategoryInPopup(null);
+    setEditingDraftId(null);
+    setDraftToResume(null);
     
-    // Select the most recently created order (highest ID)
     if (fetchedOrders.length > 0) {
       const mostRecentOrder = fetchedOrders.reduce((max, order) => 
         order.id > max.id ? order : max
@@ -165,6 +184,28 @@ function OrdersPage() {
       setSelectedOrderId(mostRecentOrder.id);
       printOrder(mostRecentOrder.id, 'KOT');
     }
+  };
+
+  const handleSaveDraft = (order, draftId = null) => {
+    if (draftId) {
+      updateDraft(draftId, order);
+    } else {
+      addDraft(order);
+    }
+  };
+
+  const handleResumeDraft = (draftId) => {
+    const draft = getDraft(draftId);
+    if (draft) {
+      setDraftToResume(draft);
+      setEditingDraftId(draftId);
+      setShowDraftsModal(false); // Close modal when resuming
+      setShowOrderPopup(true);
+    }
+  };
+
+  const handleDeleteDraft = (draftId) => {
+    deleteDraft(draftId);
   };
 
   const handleRemoveItem = (itemId) => {
@@ -248,15 +289,12 @@ function OrdersPage() {
       (async () => {
         try {
           await closeOrder(orderId);
-          
-          // Auto-pay if enabled and order is not already paid
           if (autoPayEnabled) {
             const order = orders.find(o => o.id === orderId);
             if (order && !order.paymentDone) {
               await toggleOrderPayment(orderId);
             }
           }
-          
           fetchOrders();
           setConfirmDialog({
             show: false,
@@ -331,7 +369,7 @@ function OrdersPage() {
             </button>
           )}
 
-          {/* Search Header */}
+          {/* Search & Filters Header */}
           <div className="px-5 py-4 border-b border-gray-100 bg-white z-10">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -345,7 +383,7 @@ function OrdersPage() {
                     ? 'bg-green-50 border-green-400 text-green-700 hover:bg-green-100'
                     : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
                 }`}
-                title={autoPayEnabled ? 'Auto-pay enabled: Orders will be marked as paid when closed' : 'Auto-pay disabled: Manually mark orders as paid'}
+                title={autoPayEnabled ? 'Auto-pay enabled' : 'Auto-pay disabled'}
               >
                 <div className={`w-8 h-4 rounded-full relative transition-all ${
                   autoPayEnabled ? 'bg-green-500' : 'bg-gray-400'
@@ -357,6 +395,7 @@ function OrdersPage() {
                 <CreditCard size={14} />
               </button>
             </div>
+            
             <div className="relative mb-3 group">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors"
@@ -389,9 +428,30 @@ function OrdersPage() {
                 </button>
               ))}
             </div>
+
+            {/* --- NEW DRAFTS TRIGGER BUTTON --- */}
+            {drafts.length > 0 && (
+              <div className="mt-3">
+                <button
+                  onClick={() => setShowDraftsModal(true)}
+                  className="w-full flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 hover:border-amber-300 shadow-sm text-amber-800 px-4 py-2.5 rounded-xl transition-all group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileText size={16} className="text-amber-600" />
+                    <span className="text-sm font-bold">Saved Drafts</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-amber-200/70 text-amber-800 text-xs font-black px-2 py-1 rounded-md">
+                      {drafts.length}
+                    </span>
+                    <ChevronRight size={16} className="text-amber-400 group-hover:text-amber-600 transition-colors" />
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Scrollable List */}
+          {/* Scrollable Order List (Now strictly dedicated to API orders) */}
           <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2 bg-gray-50/30">
             {visibleOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-gray-400 text-sm">
@@ -402,30 +462,21 @@ function OrdersPage() {
               visibleOrders.map((order) => {
                 const isSelected = selectedOrderId === order.id;
                 const total = getOrderTotal(order);
-                const itemCount = order.items.reduce(
-                  (acc, item) => acc + item.quantity,
-                  0,
-                );
-
-                const pendingItems = order.items.filter(
-                  (item) => item.status !== "SERVED",
-                ).length;
+                const itemCount = order.items.reduce((acc, item) => acc + item.quantity, 0);
+                const pendingItems = order.items.filter((item) => item.status !== "SERVED").length;
                 const isFullyServed = pendingItems === 0 && itemCount > 0;
 
-                // --- NEW URGENCY LOGIC (Green -> Orange -> Red) ---
                 const isOpen = order.status !== "CLOSED";
                 const createdTime = dayjs(order.createdAt);
                 const diffInMinutes = currentTime.diff(createdTime, "minute");
                 const timeDisplay = `${diffInMinutes}m`;
 
-                // Stages based on 15 minute timer
-                let urgency = "safe"; // Default Green (0-10m)
+                let urgency = "safe"; 
                 if (isOpen) {
-                  if (diffInMinutes >= 15) urgency = "critical"; // > 15m (Red)
-                  else if (diffInMinutes >= 10) urgency = "warning"; // 10-15m (Orange)
+                  if (diffInMinutes >= 15) urgency = "critical"; 
+                  else if (diffInMinutes >= 10) urgency = "warning"; 
                 }
 
-                // --- DYNAMIC STYLING ---
                 let cardClasses = "";
                 let textMainColor = "";
                 let textSubColor = "";
@@ -434,28 +485,23 @@ function OrdersPage() {
 
                 if (isSelected) {
                     if (order.status === "CLOSED") {
-                        // SELECTED + CLOSED (Gray)
                         cardClasses = "bg-[#F3F4F6] border-green-700 shadow-lg";
                         textMainColor = "text-gray-900";
                         textSubColor = "text-gray-500";
                         badgeClass = "bg-gray-200 text-gray-600";
                     } else {
-                        // SELECTED + OPEN (Color based on urgency)
                         textMainColor = "text-white";
                         if (urgency === "critical") {
-                            // Red (Overdue)
                             cardClasses = "bg-red-600 border-red-700 shadow-md shadow-red-200 animate-pulse-slow";
                             textSubColor = "text-red-100";
                             badgeClass = "bg-white/20 text-white";
                             iconType = AlertCircle;
                         } else if (urgency === "warning") {
-                            // Orange (Warning)
                             cardClasses = "bg-orange-500 border-orange-600 shadow-md shadow-orange-200";
                             textSubColor = "text-orange-50";
                             badgeClass = "bg-white/20 text-white";
                             iconType = Hourglass;
                         } else {
-                            // Green/Emerald (Safe/Initial)
                             cardClasses = "bg-emerald-600 border-emerald-600 shadow-md shadow-emerald-200";
                             textSubColor = "text-emerald-50";
                             badgeClass = "bg-white/20 text-white";
@@ -463,13 +509,11 @@ function OrdersPage() {
                         }
                     }
                 } else {
-                    // UNSELECTED
                     if (order.status === "CLOSED") {
                         cardClasses = "bg-white border-gray-200 hover:border-blue-300";
                         textMainColor = "text-gray-900";
                         textSubColor = "text-gray-400";
                     } else {
-                        // UNSELECTED + OPEN
                         if (urgency === "critical") {
                             cardClasses = "bg-red-50 border-red-300 shadow-sm";
                             textMainColor = "text-red-900";
@@ -483,7 +527,6 @@ function OrdersPage() {
                             badgeClass = "bg-orange-100 text-orange-700";
                             iconType = Hourglass;
                         } else {
-                            // Safe (Green tint initially)
                             cardClasses = "bg-emerald-50/50 border-emerald-200 hover:border-emerald-300";
                             textMainColor = "text-gray-900";
                             textSubColor = "text-emerald-700";
@@ -508,7 +551,6 @@ function OrdersPage() {
                       ${cardClasses}
                     `}
                   >
-                    {/* Top Row: ID and Timer */}
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
                         <span className={`text-sm font-bold ${textMainColor}`}>
@@ -523,7 +565,6 @@ function OrdersPage() {
                         )}
                       </div>
                       
-                      {/* Timer Widget */}
                       <div className="flex flex-col items-end">
                         {isOpen ? (
                             <div className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full transition-colors duration-300 ${badgeClass}`}>
@@ -538,43 +579,30 @@ function OrdersPage() {
                       </div>
                     </div>
 
-                    {/* Bottom Row: Details */}
                     <div className="flex justify-between items-end">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className={`text-xs ${textSubColor}`}>
                           {itemCount} items
                         </span>
 
-                        {/* PENDING ITEMS BADGE */}
                         {isOpen && pendingItems > 0 && (
                           <div
-                            className={`
-                            flex items-center gap-1 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded
-                            ${isSelected 
-                                ? "bg-white/20 text-white" 
-                                : (urgency === 'critical' ? "bg-red-200 text-red-800" : "bg-orange-100 text-orange-700")
-                            }
-                          `}
+                            className={`flex items-center gap-1 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded
+                            ${isSelected ? "bg-white/20 text-white" : (urgency === 'critical' ? "bg-red-200 text-red-800" : "bg-orange-100 text-orange-700")}`}
                           >
                             <Utensils size={10} />
                             {pendingItems} Left
                           </div>
                         )}
 
-                        {/* ALL SERVED BADGE */}
                         {isOpen && isFullyServed && (
-                          <span
-                            className={`text-[10px] font-bold ${isSelected ? "text-white/80" : "text-blue-500"}`}
-                          >
+                          <span className={`text-[10px] font-bold ${isSelected ? "text-white/80" : "text-blue-500"}`}>
                             All Served
                           </span>
                         )}
 
-                        {/* Payment Icon Indicator */}
                         {order.paymentDone && (
-                          <div
-                            className={`flex items-center gap-1 text-[10px] font-bold uppercase ${isSelected ? "text-green-200" : "text-green-600 bg-green-50 px-1.5 py-0.5 rounded"}`}
-                          >
+                          <div className={`flex items-center gap-1 text-[10px] font-bold uppercase ${isSelected ? "text-green-200" : "text-green-600 bg-green-50 px-1.5 py-0.5 rounded"}`}>
                             <CreditCard size={10} />
                             Paid
                           </div>
@@ -585,7 +613,6 @@ function OrdersPage() {
                       </span>
                     </div>
 
-                    {/* Active Indicator Arrow */}
                     {isSelected && (
                       <ChevronRight
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-white/20"
@@ -601,7 +628,6 @@ function OrdersPage() {
 
         {/* --- Main Content Area --- */}
         <main className="flex-1 h-full overflow-hidden flex flex-col">
-          {/* Mobile Toggle Bar */}
           <div className="lg:hidden mb-4">
             <button
               onClick={() => setIsSidebarOpen(true)}
@@ -700,6 +726,84 @@ function OrdersPage() {
         </div>
       )}
 
+      {/* --- NEW DEDICATED DRAFTS MODAL --- */}
+      {showDraftsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[85vh] transform transition-all scale-100">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/80">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 text-amber-600 rounded-lg shadow-sm">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Saved Drafts</h2>
+                  <p className="text-xs text-gray-500">Resume or manage your incomplete orders</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDraftsModal(false)}
+                className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body (Grid of drafts) */}
+            <div className="p-5 overflow-y-auto custom-scrollbar flex-1 bg-gray-50/30">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {drafts.map((draft) => {
+                  const total = draft.items.reduce((sum, item) => sum + item.price * item.quantity / 100, 0);
+                  const itemCount = draft.items.reduce((acc, item) => acc + item.quantity, 0);
+                  
+                  return (
+                    <div
+                      key={draft.id}
+                      className="bg-white border border-gray-200 rounded-xl p-4 hover:border-amber-300 hover:shadow-md transition-all group flex flex-col"
+                    >
+                      <div className="mb-3">
+                        <h3 className="font-bold text-gray-900 truncate text-base">
+                          {draft.tag || `Draft ${draft.id}`}
+                        </h3>
+                        <div className="text-[11px] text-gray-400 mt-0.5">
+                          Saved: {dayjs(draft.createdAt).format("DD MMM YYYY, hh:mm A")}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-lg mb-4">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <Utensils size={14} className="text-gray-400"/> 
+                          {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                        </span>
+                        <span className="font-bold text-gray-900">
+                          ₹{total.toFixed(2)}
+                        </span>
+                      </div>
+
+                      <div className="flex gap-2 mt-auto">
+                        <button
+                          onClick={() => handleResumeDraft(draft.id)}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 text-sm font-bold rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Edit3 size={16} /> Resume
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDraft(draft.id)}
+                          className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors cursor-pointer"
+                          title="Delete Draft"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- Create Order Popup --- */}
       {showOrderPopup && (
         <OrderPopup
@@ -709,9 +813,14 @@ function OrdersPage() {
           onCancel={() => {
             setShowOrderPopup(false);
             setActiveCategoryInPopup(null);
+            setEditingDraftId(null);
+            setDraftToResume(null);
           }}
           activeCategory={activeCategoryInPopup}
           onCategoryChange={setActiveCategoryInPopup}
+          initialOrder={draftToResume}
+          onSaveDraft={handleSaveDraft}
+          editingDraftId={editingDraftId}
         />
       )}
     </div>

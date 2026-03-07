@@ -1,4 +1,4 @@
-import { X, Search, ShoppingBag, UtensilsCrossed, ChevronRight, Calculator, Loader2, LayoutGrid, ArrowLeftIcon } from 'lucide-react';
+import { X, Search, ShoppingBag, UtensilsCrossed, ChevronRight, Calculator, Loader2, LayoutGrid, ArrowLeftIcon, Save } from 'lucide-react';
 import OrderItemsListPopup from './OrderItemsListPopup'; 
 import { useEffect, useState } from 'react';
 import { getDishes } from '../API/dishes.js';
@@ -40,7 +40,7 @@ const getCategoryImage = (category) => {
   return keywords[category];
 };
 
-function OrderPopup({ searchQuery, onSearchChange, onConfirm, onCancel, activeCategory, onCategoryChange }) {
+function OrderPopup({ searchQuery, onSearchChange, onConfirm, onCancel, activeCategory, onCategoryChange, initialOrder = null, onSaveDraft = null, editingDraftId = null }) {
 
   const getOrderTotal = (order) => {
     return order.items.reduce((sum, item) => sum + item.price * item.quantity / 100, 0);
@@ -49,10 +49,11 @@ function OrderPopup({ searchQuery, onSearchChange, onConfirm, onCancel, activeCa
   const [allDishes, setAllDishes] = useState({});
   // Use prop if provided, otherwise default to null
   const actualActiveCategory = activeCategory !== undefined ? activeCategory : null;
-  const [order, setOrder] = useState({items: [], tag: ''});
+  const [order, setOrder] = useState(initialOrder || {items: [], tag: ''});
   const [tagError, setTagError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -126,6 +127,18 @@ function OrderPopup({ searchQuery, onSearchChange, onConfirm, onCancel, activeCa
         setIsSubmitting(false);
       }
     })();
+  }
+
+  function onSaveDraftClick(){
+    if (onSaveDraft && order.items.length > 0) {
+      setIsSavingDraft(true);
+      onSaveDraft(order, editingDraftId);
+      // Brief delay for visual feedback
+      setTimeout(() => {
+        setIsSavingDraft(false);
+        onCancel(); // Close the popup after saving
+      }, 300);
+    }
   }
 
   // Determine if we are in "Grid View" (Categories) or "List View" (Items)
@@ -333,29 +346,57 @@ function OrderPopup({ searchQuery, onSearchChange, onConfirm, onCancel, activeCa
                 </span>
             </div>
 
-            <button
-              onClick={onOrderConfirm}
-              disabled={order.items.length === 0 || isSubmitting}
-              className={`
-                w-full py-3.5 px-6 rounded-xl flex items-center justify-between group font-bold text-base shadow-lg
-                transition-all duration-200
-                ${(order.items.length === 0 || isSubmitting)
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' 
-                  : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 hover:-translate-y-0.5 cursor-pointer'}
-              `}
-            >
-              {isSubmitting ? (
-                <div className="flex items-center justify-center w-full gap-2">
-                  <Loader2 className="animate-spin" size={20} />
-                  <span>Processing...</span>
-                </div>
-              ) : (
-                <>
-                  <span>Place Order</span>
-                  <ChevronRight className={`transition-transform duration-200 ${order.items.length > 0 ? 'group-hover:translate-x-1' : ''}`} size={20} />
-                </>
+            <div className="space-y-2">
+              {onSaveDraft && (
+                <button
+                  onClick={onSaveDraftClick}
+                  disabled={order.items.length === 0 || isSavingDraft}
+                  className={`
+                    w-full py-3 px-6 rounded-xl flex items-center justify-center gap-2 font-bold text-base
+                    transition-all duration-200
+                    ${(order.items.length === 0 || isSavingDraft)
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300 hover:border-gray-400 cursor-pointer'}
+                  `}
+                >
+                  {isSavingDraft ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      <span>{editingDraftId ? 'Update Draft' : 'Save as Draft'}</span>
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+
+              <button
+                onClick={onOrderConfirm}
+                disabled={order.items.length === 0 || isSubmitting}
+                className={`
+                  w-full py-3.5 px-6 rounded-xl flex items-center justify-between group font-bold text-base shadow-lg
+                  transition-all duration-200
+                  ${(order.items.length === 0 || isSubmitting)
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed shadow-none' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 hover:-translate-y-0.5 cursor-pointer'}
+                `}
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center w-full gap-2">
+                    <Loader2 className="animate-spin" size={20} />
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  <>
+                    <span>Place Order</span>
+                    <ChevronRight className={`transition-transform duration-200 ${order.items.length > 0 ? 'group-hover:translate-x-1' : ''}`} size={20} />
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
