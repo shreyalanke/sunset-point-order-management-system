@@ -45,7 +45,7 @@ public interface OrderDao {
             "        WHERE order_id = :orderId")
     void setIsPayment(boolean isPaymentDone, int orderId);
 
-    @Query("DELETE FROM orders WHERE order_id = :orderId")
+    @Query("UPDATE orders SET order_status = 'CANCELLED' WHERE order_id = :orderId")
     void cancelOrder(int orderId);
 
     /* ---------------- TODAY ORDERS ---------------- */
@@ -71,10 +71,13 @@ public interface OrderDao {
             "        LEFT JOIN dishes d ON oi.dish_id = d.dish_id\n" +
             "        WHERE\n" +
             "            (\n" +
-            "              o.created_at >= datetime('now', 'start of day')\n" +
-            "              AND o.created_at <  datetime('now', 'start of day', '+1 day')\n" +
+            "              (\n" +
+            "                o.created_at >= datetime('now', 'start of day')\n" +
+            "                AND o.created_at <  datetime('now', 'start of day', '+1 day')\n" +
+            "              )\n" +
+            "              OR o.order_status = 'OPEN'\n" +
             "            )\n" +
-            "            OR o.order_status = 'OPEN'\n" +
+            "            AND o.order_status != 'CANCELLED'\n" +
             "        ORDER BY o.created_at, oi.order_item_id")
     List<OrderWithItemsRow> getTodayOrders();
 
