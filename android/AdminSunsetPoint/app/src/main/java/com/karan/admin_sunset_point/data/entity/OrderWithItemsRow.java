@@ -8,6 +8,7 @@ public class OrderWithItemsRow {
     public String order_status;
     public boolean is_payment_done;
     public int order_total;
+    public Integer display_id;
 
     public Integer order_item_id;
     public Integer quantity;

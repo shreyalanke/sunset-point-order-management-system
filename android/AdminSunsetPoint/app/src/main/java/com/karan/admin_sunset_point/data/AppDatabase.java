@@ -7,6 +7,7 @@ import androidx.annotation.NonNull;
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+import androidx.room.migration.Migration;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.google.gson.Gson;
@@ -28,7 +29,7 @@ import java.util.concurrent.Executors;
                 OrderItem.class,
                 Order.class
         },
-        version = 4
+        version = 5
 )
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -38,6 +39,13 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract OrderDao orderDao();
     public abstract OrderItemDao orderItemDao();
 
+    static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE orders ADD COLUMN display_id INTEGER");
+        }
+    };
+
     public static synchronized AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
             INSTANCE = Room.databaseBuilder(
@@ -45,6 +53,7 @@ public abstract class AppDatabase extends RoomDatabase {
                     AppDatabase.class,
                     "pos_db"
             ).fallbackToDestructiveMigration(true)
+            .addMigrations(MIGRATION_4_5)
             .addCallback(new RoomDatabase.Callback() {
                 @Override
                 public void onOpen(@NonNull SupportSQLiteDatabase db) {

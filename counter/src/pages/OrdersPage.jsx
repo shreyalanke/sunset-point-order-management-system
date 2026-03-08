@@ -151,7 +151,8 @@ function OrdersPage() {
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.tag?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.id.toString().includes(searchQuery);
+      order.id.toString().includes(searchQuery) ||
+      order.displayId?.toString().includes(searchQuery);
 
     if (filterStatus === "all") return matchesSearch;
     if (filterStatus === "active")
@@ -554,7 +555,7 @@ function OrdersPage() {
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
                         <span className={`text-sm font-bold ${textMainColor}`}>
-                          #{order.tag || order.id}
+                          #{order.displayId ?? order.tag ?? order.id}
                         </span>
                         {order.status === "CLOSED" && (
                           <span

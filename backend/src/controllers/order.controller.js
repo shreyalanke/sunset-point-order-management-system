@@ -12,6 +12,7 @@ function getOrdersController(req, res) {
             id: row.order_id,
             items: [],
             tag: row.order_tag,
+            displayId: row.display_id,
             createdAt: row.created_at,
             status: row.order_status,
             paymentDone: row.is_payment_done,

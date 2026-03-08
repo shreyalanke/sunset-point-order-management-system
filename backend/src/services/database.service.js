@@ -11,6 +11,7 @@ async function getOrders() {
     SELECT 
       o.order_id,
       o.order_tag,
+      o.display_id,
       o.created_at,
       o.order_status,
       o.is_payment_done,

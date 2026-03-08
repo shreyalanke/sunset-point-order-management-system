@@ -48,11 +48,17 @@ public interface OrderDao {
     @Query("UPDATE orders SET order_status = 'CANCELLED' WHERE order_id = :orderId")
     void cancelOrder(int orderId);
 
+    @Query("SELECT COUNT(*) FROM orders " +
+            "WHERE created_at >= datetime('now', 'start of day') " +
+            "AND created_at < datetime('now', 'start of day', '+1 day')")
+    int getTodayOrderCount();
+
     /* ---------------- TODAY ORDERS ---------------- */
 
     @Query("        SELECT\n" +
             "          o.order_id,\n" +
             "          o.order_tag,\n" +
+            "          o.display_id,\n" +
             "          o.created_at,\n" +
             "          o.order_status,\n" +
             "          o.is_payment_done,\n" +
@@ -86,6 +92,7 @@ public interface OrderDao {
     @Query("        SELECT\n" +
             "          o.order_id,\n" +
             "          o.order_tag,\n" +
+            "          o.display_id,\n" +
             "          o.created_at,\n" +
             "          o.order_status,\n" +
             "          o.is_payment_done,\n" +

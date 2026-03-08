@@ -17,6 +17,8 @@ public class Order {
 
     public int order_total = 0;
 
+    public Integer display_id;
+
     @NonNull
     public OrderStatus order_status = OrderStatus.OPEN;
 

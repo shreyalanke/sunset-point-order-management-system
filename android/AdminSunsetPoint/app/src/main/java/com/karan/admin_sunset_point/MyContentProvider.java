@@ -236,6 +236,7 @@ public class MyContentProvider extends ContentProvider {
                 order = new OrderResponse();
                 order.id = row.order_id;
                 order.tag = row.order_tag;
+                order.displayId = row.display_id;
                 order.createdAt = row.created_at;
                 order.status = row.order_status;
                 order.paymentDone = row.is_payment_done;
@@ -303,6 +304,7 @@ public class MyContentProvider extends ContentProvider {
                 order = new OrderResponse();
                 order.id = row.order_id;
                 order.tag = row.order_tag;
+                order.displayId = row.display_id;
                 order.createdAt = row.created_at;
                 order.status = row.order_status;
                 order.paymentDone = row.is_payment_done;
@@ -335,6 +337,7 @@ public class MyContentProvider extends ContentProvider {
         order.order_tag = tag;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
         order.created_at = sdf.format(new Date());
+        order.display_id = db.orderDao().getTodayOrderCount() + 1;
 
         long id = db.orderDao().insertOrder(order);
         Log.d(TAG, "createOrder: Order Header inserted. New ID: " + id);

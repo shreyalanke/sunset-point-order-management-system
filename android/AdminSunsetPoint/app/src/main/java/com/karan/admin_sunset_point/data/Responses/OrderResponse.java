@@ -7,6 +7,7 @@ public class OrderResponse {
     public int id;
     public List<OrderItemResponse> items = new ArrayList<>();
     public String tag;
+    public Integer displayId;
     public String createdAt;
     public String status;
     public boolean paymentDone;

@@ -89,7 +89,7 @@ function OrderCard({
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-              Order #{order.tag || order.id}
+              Order #{order.displayId ?? order.tag ?? order.id}
             </h1>
             {isClosed ? (
               <span className="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold uppercase tracking-wider border border-gray-200 flex items-center gap-1.5">
