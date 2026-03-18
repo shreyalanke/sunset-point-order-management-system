@@ -8,10 +8,10 @@
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"/>
     <queries>
         <!-- Option A: Allow access to the specific provider authority -->
-        <provider android:authorities="com.karan.sunset_point.provider" />
+        <provider android:authorities="com.karan.admin_sunset_point.provider" />
 
         <!-- Option B: Or simply allow access to the package name -->
-        <package android:name="com.karan.sunset_point" />
+        <package android:name="com.karan.admin_sunset_point" />
     </queries>
 
     <application

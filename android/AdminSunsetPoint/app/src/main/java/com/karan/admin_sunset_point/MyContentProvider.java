@@ -30,6 +30,8 @@ public class MyContentProvider extends ContentProvider {
     private Gson gson = new Gson();
 
     private static final String AUTHORITY =
+            "com.karan.admin_sunset_point.provider";
+    private static final String LEGACY_AUTHORITY =
             "com.karan.sunset_point.provider";
 
     // URI Codes
@@ -43,9 +45,13 @@ public class MyContentProvider extends ContentProvider {
     static {
         uriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
         uriMatcher.addURI(AUTHORITY, "orders", ORDERS);
+        uriMatcher.addURI(LEGACY_AUTHORITY, "orders", ORDERS);
         uriMatcher.addURI(AUTHORITY, "dishes", DISHES);
+        uriMatcher.addURI(LEGACY_AUTHORITY, "dishes", DISHES);
         uriMatcher.addURI(AUTHORITY, "orderPrint/#", ORDER_PRINT);
+        uriMatcher.addURI(LEGACY_AUTHORITY, "orderPrint/#", ORDER_PRINT);
         uriMatcher.addURI(AUTHORITY, "deleteItem/#", DELETE_ITEM);
+        uriMatcher.addURI(LEGACY_AUTHORITY, "deleteItem/#", DELETE_ITEM);
     }
 
     @Override

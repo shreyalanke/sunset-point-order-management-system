@@ -53,6 +53,9 @@ public interface OrderDao {
             "AND created_at < datetime('now', 'start of day', '+1 day')")
     int getTodayOrderCount();
 
+    @Query("DELETE FROM orders")
+    void deleteAllOrders();
+
     /* ---------------- TODAY ORDERS ---------------- */
 
     @Query("        SELECT\n" +

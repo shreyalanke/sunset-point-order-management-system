@@ -463,6 +463,8 @@ function OrdersPage() {
               visibleOrders.map((order) => {
                 const isSelected = selectedOrderId === order.id;
                 const total = getOrderTotal(order);
+                const orderLabel =
+                  (order.tag && order.tag.trim()) || order.displayId || order.id;
                 const itemCount = order.items.reduce((acc, item) => acc + item.quantity, 0);
                 const pendingItems = order.items.filter((item) => item.status !== "SERVED").length;
                 const isFullyServed = pendingItems === 0 && itemCount > 0;
@@ -555,7 +557,7 @@ function OrdersPage() {
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-center gap-2">
                         <span className={`text-sm font-bold ${textMainColor}`}>
-                          #{order.displayId ?? order.tag ?? order.id}
+                          #{orderLabel}
                         </span>
                         {order.status === "CLOSED" && (
                           <span

@@ -33,4 +33,7 @@ public interface DishDao {
 
     @Query("SELECT COUNT(*) FROM dishes")
     int countDishes();
+
+    @Query("DELETE FROM dishes")
+    void deleteAllDishes();
 }

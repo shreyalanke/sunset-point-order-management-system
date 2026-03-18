@@ -5,9 +5,11 @@ import com.karan.admin_sunset_point.data.AppDatabase;
 import com.karan.admin_sunset_point.data.entity.CategoryPerformance;
 import com.karan.admin_sunset_point.data.entity.Dish;
 import com.karan.admin_sunset_point.data.entity.DishPerformance;
+import com.karan.admin_sunset_point.data.entity.ItemStatus;
 import com.karan.admin_sunset_point.data.entity.Order;
 import com.karan.admin_sunset_point.data.entity.OrderAnalysis;
 import com.karan.admin_sunset_point.data.entity.OrderItem;
+import com.karan.admin_sunset_point.data.entity.OrderStatus;
 import com.karan.admin_sunset_point.data.entity.OrderWithItems;
 import com.karan.admin_sunset_point.data.Responses.PaginatedOrdersResponse;
 
@@ -17,8 +19,10 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 public class Handler {
@@ -162,5 +166,185 @@ public class Handler {
 
     public List<OrderItem> getAllOrderItems() {
         return db.orderItemDao().getAllOrderItems();
+    }
+
+    public JSONObject restoreBackup(JSONObject backupData, boolean wipeExistingData) throws JSONException {
+        final JSONArray dishesArray = backupData.optJSONArray("dishes") == null ? new JSONArray() : backupData.optJSONArray("dishes");
+        final JSONArray ordersArray = backupData.optJSONArray("orders") == null ? new JSONArray() : backupData.optJSONArray("orders");
+        final JSONArray orderItemsArray = backupData.optJSONArray("order_items") == null ? new JSONArray() : backupData.optJSONArray("order_items");
+
+        final int[] restoredCounts = new int[] {0, 0, 0};
+        final int[] skippedCounts = new int[] {0, 0, 0};
+        final Set<Integer> restoredDishIds = new HashSet<>();
+        final Set<Integer> restoredOrderIds = new HashSet<>();
+        final List<String> warnings = new ArrayList<>();
+
+        AppDatabase.withSeedLock(() -> db.runInTransaction(() -> {
+            if (wipeExistingData) {
+                db.orderItemDao().deleteAllOrderItems();
+                db.orderDao().deleteAllOrders();
+                db.dishDao().deleteAllDishes();
+            }
+
+            for (int index = 0; index < dishesArray.length(); index++) {
+                JSONObject dishObj = dishesArray.optJSONObject(index);
+                if (dishObj == null) {
+                    skippedCounts[0]++;
+                    addWarning(warnings, "Skipped dish at index " + index + ": invalid JSON object");
+                    continue;
+                }
+
+                try {
+                    Dish dish = new Dish();
+                    dish.dish_id = dishObj.getInt("dish_id");
+                    dish.dish_name = dishObj.getString("dish_name");
+                    dish.category = dishObj.getString("category");
+                    dish.price = dishObj.optInt("price", 0);
+                    db.dishDao().insertDish(dish);
+                    restoredDishIds.add(dish.dish_id);
+                    restoredCounts[0]++;
+                } catch (Exception exception) {
+                    skippedCounts[0]++;
+                    addWarning(warnings, "Skipped dish at index " + index + ": " + exception.getMessage());
+                }
+            }
+
+            for (int index = 0; index < ordersArray.length(); index++) {
+                JSONObject orderObj = ordersArray.optJSONObject(index);
+                if (orderObj == null) {
+                    skippedCounts[1]++;
+                    addWarning(warnings, "Skipped order at index " + index + ": invalid JSON object");
+                    continue;
+                }
+
+                try {
+                    Order order = new Order();
+                    order.order_id = orderObj.getInt("order_id");
+                    order.order_tag = orderObj.optString("order_tag", null);
+                    order.is_payment_done = orderObj.optBoolean("is_payment_done", false);
+                    order.order_total = orderObj.optInt("order_total", 0);
+                    if (orderObj.has("display_id") && !orderObj.isNull("display_id")) {
+                        order.display_id = orderObj.getInt("display_id");
+                    }
+                    order.order_status = parseOrderStatus(orderObj.optString("order_status", null));
+                    String createdAt = orderObj.optString("created_at", null);
+                    order.created_at = (createdAt == null || createdAt.isEmpty()) ? null : createdAt;
+                    db.orderDao().insertOrder(order);
+                    restoredOrderIds.add(order.order_id);
+                    restoredCounts[1]++;
+                } catch (Exception exception) {
+                    skippedCounts[1]++;
+                    addWarning(warnings, "Skipped order at index " + index + ": " + exception.getMessage());
+                }
+            }
+
+            for (int index = 0; index < orderItemsArray.length(); index++) {
+                JSONObject itemObj = orderItemsArray.optJSONObject(index);
+                if (itemObj == null) {
+                    skippedCounts[2]++;
+                    addWarning(warnings, "Skipped order item at index " + index + ": invalid JSON object");
+                    continue;
+                }
+
+                try {
+                    int orderId = itemObj.getInt("order_id");
+                    int dishId = itemObj.getInt("dish_id");
+
+                    // Prevent foreign key failures by validating restored parent rows first.
+                    if (!restoredOrderIds.contains(orderId) || !restoredDishIds.contains(dishId)) {
+                        skippedCounts[2]++;
+                        addWarning(warnings, "Skipped order item at index " + index + ": missing order_id or dish_id reference");
+                        continue;
+                    }
+
+                    OrderItem item = new OrderItem();
+                    item.order_item_id = itemObj.getInt("order_item_id");
+                    item.order_id = orderId;
+                    item.dish_id = dishId;
+                    item.quantity = itemObj.optInt("quantity", 1);
+                    item.dish_name_snapshot = itemObj.getString("dish_name_snapshot");
+                    item.price_snapshot = itemObj.optInt("price_snapshot", 0);
+                    item.item_status = parseItemStatus(itemObj.optString("item_status", null));
+                    db.orderItemDao().insertItem(item);
+                    restoredCounts[2]++;
+                } catch (Exception exception) {
+                    skippedCounts[2]++;
+                    addWarning(warnings, "Skipped order item at index " + index + ": " + exception.getMessage());
+                }
+            }
+        }));
+
+        JSONObject result = new JSONObject();
+        int totalRestored = restoredCounts[0] + restoredCounts[1] + restoredCounts[2];
+        int totalSkipped = skippedCounts[0] + skippedCounts[1] + skippedCounts[2];
+
+        result.put("success", totalRestored > 0 || (dishesArray.length() + ordersArray.length() + orderItemsArray.length() == 0));
+        result.put("partial_restore", totalSkipped > 0);
+        result.put("message", buildRestoreMessage(wipeExistingData, totalRestored, totalSkipped));
+        result.put("restored_dishes", restoredCounts[0]);
+        result.put("restored_orders", restoredCounts[1]);
+        result.put("restored_order_items", restoredCounts[2]);
+        result.put("skipped_dishes", skippedCounts[0]);
+        result.put("skipped_orders", skippedCounts[1]);
+        result.put("skipped_order_items", skippedCounts[2]);
+        result.put("total_restored", totalRestored);
+        result.put("total_skipped", totalSkipped);
+
+        JSONArray warningArray = new JSONArray();
+        for (String warning : warnings) {
+            warningArray.put(warning);
+        }
+        result.put("warnings", warningArray);
+
+        return result;
+    }
+
+    private static void addWarning(List<String> warnings, String warning) {
+        if (warnings.size() < 25) {
+            warnings.add(warning);
+        }
+    }
+
+    private static OrderStatus parseOrderStatus(String raw) {
+        if (raw == null) {
+            return OrderStatus.OPEN;
+        }
+        try {
+            return OrderStatus.valueOf(raw);
+        } catch (IllegalArgumentException exception) {
+            return OrderStatus.OPEN;
+        }
+    }
+
+    private static ItemStatus parseItemStatus(String raw) {
+        if (raw == null) {
+            return ItemStatus.PENDING;
+        }
+        try {
+            return ItemStatus.valueOf(raw);
+        } catch (IllegalArgumentException exception) {
+            return ItemStatus.PENDING;
+        }
+    }
+
+    private static String buildRestoreMessage(boolean wipeExistingData, int totalRestored, int totalSkipped) {
+        StringBuilder message = new StringBuilder();
+        if (wipeExistingData) {
+            message.append("Current data wiped. ");
+        }
+
+        if (totalRestored == 0 && totalSkipped > 0) {
+            message.append("No records could be restored");
+        } else if (totalRestored == 0) {
+            message.append("Backup contained no records to restore");
+        } else {
+            message.append("Restore completed with ").append(totalRestored).append(" records imported");
+        }
+
+        if (totalSkipped > 0) {
+            message.append(" and ").append(totalSkipped).append(" skipped");
+        }
+
+        return message.toString();
     }
 }

@@ -2,8 +2,6 @@ package com.karan.admin_sunset_point.data.handler;
 
 import android.content.ContentResolver;
 import android.net.Uri;
-import android.os.ParcelFileDescriptor;
-import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
@@ -29,24 +27,24 @@ import com.karan.admin_sunset_point.data.entity.SalesTrend;
 import com.karan.admin_sunset_point.data.Responses.PaginatedOrdersResponse;
 import com.karan.admin_sunset_point.data.handler.DateRangeUtil.DateRange;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class NativeApi {
     private final Executor executor = Executors.newSingleThreadExecutor();
     private final WebView webView;
+    private static String lastRestoreResult;
 
     public NativeApi(WebView webView) {
         this.webView = webView;
@@ -84,8 +82,6 @@ public class NativeApi {
             }catch (Exception e){
                 e.printStackTrace();
             }
-
-            Log.d("result",result);
 
             String js = "window.__nativeResolve(" +
                     JSONObject.quote(requestId) + "," +
@@ -171,7 +167,6 @@ public class NativeApi {
         executor.execute(() -> {
             String result = "";
             try{
-                Log.d(start,end);
                 DateRange dateRange = new DateRange(start, end);
                 OrderAnalysis orderAnalysis = Handler.getInstance().getAnalyticsByDateRange(dateRange.start, dateRange.end);
                 JSONObject obj = new JSONObject();
@@ -199,8 +194,6 @@ public class NativeApi {
             }catch (Exception e){
                 e.printStackTrace();
             }
-
-            Log.d("result",result);
 
             String js = "window.__nativeResolve(" +
                     JSONObject.quote(requestId) + "," +
@@ -592,7 +585,7 @@ public class NativeApi {
                 // Create backup JSON object
                 JSONObject backupData = new JSONObject();
                 backupData.put("backup_timestamp", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).format(new Date()));
-                backupData.put("database_version", 4);
+                backupData.put("database_version", 5);
 
                 // Add dishes
                 JSONArray dishesArray = new JSONArray();
@@ -614,6 +607,7 @@ public class NativeApi {
                     orderObj.put("order_tag", order.order_tag);
                     orderObj.put("is_payment_done", order.is_payment_done);
                     orderObj.put("order_total", order.order_total);
+                    orderObj.put("display_id", order.display_id == null ? JSONObject.NULL : order.display_id);
                     orderObj.put("order_status", order.order_status.toString());
                     orderObj.put("created_at", order.created_at);
                     ordersArray.put(orderObj);
@@ -646,12 +640,13 @@ public class NativeApi {
                 }
 
                 StringBuilder ordersCSV = new StringBuilder();
-                ordersCSV.append("order_id,order_tag,is_payment_done,order_total,order_status,created_at\n");
+                ordersCSV.append("order_id,order_tag,is_payment_done,order_total,display_id,order_status,created_at\n");
                 for (Order order : orders) {
                     ordersCSV.append(order.order_id).append(",")
                             .append(escapeCsv(order.order_tag)).append(",")
                             .append(order.is_payment_done).append(",")
                             .append(order.order_total).append(",")
+                            .append(order.display_id == null ? "" : order.display_id).append(",")
                             .append(order.order_status.toString()).append(",")
                             .append(order.created_at).append("\n");
                 }
@@ -682,20 +677,25 @@ public class NativeApi {
                 if (activity != null) {
                     activity.runOnUiThread(() -> activity.launchBackupFilePicker(fileData, requestId));
                 } else {
-                    String js = "window.__nativeResolve(" +
-                            JSONObject.quote(requestId) + "," +
-                            "\"{\\\"success\\\":false,\\\"message\\\":\\\"Activity not available\\\"}\");";
-                    webView.post(() -> webView.evaluateJavascript(js, null));
+                    resolveRequestError(requestId, "Activity not available");
                 }
 
             } catch (Exception e) {
                 e.printStackTrace();
-                String js = "window.__nativeResolve(" +
-                        JSONObject.quote(requestId) + "," +
-                        "\"{\\\"success\\\":false,\\\"message\\\":\\\"Backup failed: " + e.getMessage() + "\\\"}\");";
-                webView.post(() -> webView.evaluateJavascript(js, null));
+                resolveRequestError(requestId, "Backup failed: " + e.getMessage());
             }
         });
+    }
+
+    @JavascriptInterface
+    public void restoreDatabase(String requestId, boolean wipeExistingData) {
+        MainActivity activity = MainActivity.getInstance();
+        if (activity == null) {
+            resolveRequestError(requestId, "Activity not available");
+            return;
+        }
+
+        activity.runOnUiThread(() -> activity.launchRestoreFilePicker(requestId, wipeExistingData));
     }
 
     public void writeBackupToUri(Uri uri, String[] fileData, String requestId) {
@@ -749,8 +749,6 @@ public class NativeApi {
                 resultObj.put("path", uri.toString());
                 result = resultObj.toString();
 
-                Log.d("DatabaseBackup", "Backup created: " + uri.toString());
-
             } catch (Exception e) {
                 e.printStackTrace();
                 try {
@@ -764,12 +762,98 @@ public class NativeApi {
             }
 
             String finalResult = result;
-            String js = "window.__nativeResolve(" +
-                    JSONObject.quote(requestId) + "," +
-                    JSONObject.quote(finalResult) +
-                    ");";
-            webView.post(() -> webView.evaluateJavascript(js, null));
+            resolveRequest(requestId, finalResult);
         });
+    }
+
+    public void restoreDatabaseFromUri(Uri uri, String requestId, boolean wipeExistingData) {
+        executor.execute(() -> {
+            try {
+                JSONObject backupData = readBackupJsonFromUri(uri);
+                JSONObject result = Handler.getInstance().restoreBackup(backupData, wipeExistingData);
+                result.put("path", uri.toString());
+                String resultPayload = result.toString();
+                rememberRestoreResult(resultPayload);
+                resolveRequest(requestId, resultPayload);
+            } catch (Exception e) {
+                e.printStackTrace();
+                String errorPayload = buildErrorPayload("Restore failed: " + e.getMessage());
+                rememberRestoreResult(errorPayload);
+                resolveRequest(requestId, errorPayload);
+            }
+        });
+    }
+
+    @JavascriptInterface
+    public String consumeLastRestoreResult() {
+        synchronized (NativeApi.class) {
+            String payload = lastRestoreResult;
+            lastRestoreResult = null;
+            return payload;
+        }
+    }
+
+    public void resolveRequestError(String requestId, String message) {
+        resolveRequest(requestId, buildErrorPayload(message));
+    }
+
+    public void resolveRestoreRequestError(String requestId, String message) {
+        String payload = buildErrorPayload(message);
+        rememberRestoreResult(payload);
+        resolveRequest(requestId, payload);
+    }
+
+    private void resolveRequest(String requestId, String payload) {
+        String js = "window.__nativeResolve(" +
+                JSONObject.quote(requestId) + "," +
+                JSONObject.quote(payload) +
+                ");";
+        webView.post(() -> webView.evaluateJavascript(js, null));
+    }
+
+    private static void rememberRestoreResult(String payload) {
+        synchronized (NativeApi.class) {
+            lastRestoreResult = payload;
+        }
+    }
+
+    private static String buildErrorPayload(String message) {
+        try {
+            JSONObject errorObj = new JSONObject();
+            errorObj.put("success", false);
+            errorObj.put("message", message);
+            return errorObj.toString();
+        } catch (JSONException exception) {
+            return "{\"success\":false,\"message\":\"Request failed\"}";
+        }
+    }
+
+    private JSONObject readBackupJsonFromUri(Uri uri) throws Exception {
+        ContentResolver resolver = App.context.getContentResolver();
+
+        try (InputStream inputStream = resolver.openInputStream(uri)) {
+            if (inputStream == null) {
+                throw new IllegalStateException("Selected file could not be opened");
+            }
+
+            try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+                ZipEntry entry;
+                while ((entry = zipInputStream.getNextEntry()) != null) {
+                    if ("backup.json".equals(entry.getName())) {
+                        StringBuilder jsonBuilder = new StringBuilder();
+                        byte[] buffer = new byte[4096];
+                        int bytesRead;
+                        while ((bytesRead = zipInputStream.read(buffer)) != -1) {
+                            jsonBuilder.append(new String(buffer, 0, bytesRead, StandardCharsets.UTF_8));
+                        }
+                        return new JSONObject(jsonBuilder.toString());
+                    }
+                    zipInputStream.closeEntry();
+                }
+            }
+        }
+
+        throw new IllegalStateException("backup.json not found in selected backup archive");
     }
 
     private String escapeCsv(String value) {

@@ -32,4 +32,7 @@ public interface OrderItemDao {
 
     @Query("SELECT * FROM order_items")
     List<OrderItem> getAllOrderItems();
+
+    @Query("DELETE FROM order_items")
+    void deleteAllOrderItems();
 }

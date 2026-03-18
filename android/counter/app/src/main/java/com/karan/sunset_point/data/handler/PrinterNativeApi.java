@@ -190,7 +190,7 @@ public class PrinterNativeApi {
         sb.append("[C]").append(doubleSeparator).append("\n");
 
 // ================= ORDER ID + DATE =================
-        sb.append("[L]Order Number : ").append(order.id).append("\n");
+    sb.append("[L]Order Number : ").append(order.displayId != null ? order.displayId : order.id).append("\n");
 
 // ================= CUSTOMER / TABLE =================
         if (order.tag != null) {
@@ -301,7 +301,7 @@ public class PrinterNativeApi {
         if(!order.tag.isEmpty()){
             sb.append("[L]Customer : ").append(order.tag).append("\n");
         }
-        sb.append("[L]Order Number : <b>").append(order.id).append("</b>\n");
+        sb.append("[L]Order Number : <b>").append(order.displayId != null ? order.displayId : order.id).append("</b>\n");
 
         if (order.createdAt != null && order.createdAt.length() >= 16) {
             String date = order.createdAt.substring(0, 10);
